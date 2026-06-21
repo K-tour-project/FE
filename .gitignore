@@ -30,7 +30,8 @@ keystore.properties
 # API keys and environment configuration                                                                                                                                                               
 secrets.properties                                                                                                                                                                                     
 .env                                                                                                                                                                                                   
-.env.*                                                                                                                                                                                                 
+.env.*
+AGENTS.md
                                                                                                                                                                                                          
 # OS                                                                                                                                                                                                   
 .DS_Store                                                                                                                                                                                              
