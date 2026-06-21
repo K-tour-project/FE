@@ -1,36 +1,29 @@
-제공하신 Conventional Commits 가이드를 기반으로 AGENTS.md 문서를 생성하겠습니다.완료되었습니다! 📄
+# Repository Guidelines
 
-**AGENTS.md - Conventional Commits 가이드** 문서를 생성했습니다.
+## Project Structure & Module Organization
 
-## 문서 구성:
+This is a single-module Android application built with Kotlin and Jetpack Compose. Application code lives in `app/src/main/java/com/example/project/`; keep reusable UI theme code under `ui/theme` and group new features into focused packages. Android resources belong in `app/src/main/res`, while the manifest is `app/src/main/AndroidManifest.xml`. Put JVM unit tests in `app/src/test` and device or emulator tests in `app/src/androidTest`. Centralize dependency versions and aliases in `gradle/libs.versions.toml`.
 
-✅ **정의 및 참고자료**
-- Conventional Commits 개념 설명
-- 공식 참고 링크 (영문/한문)
+## Build, Test, and Development Commands
 
-✅ **기본 구조**
-- 커밋 메시지의 기본 형식
-- 영문/한문 예시
+Run commands from the repository root. On Windows, use the checked-in wrapper:
 
-✅ **상세 가이드**
-- 제목 작성 규칙 (50자 이내)
-- 본문 작성 방법
-- 꼬리말 작성 규칙
+- `.\gradlew.bat assembleDebug` builds a debug APK.
+- `.\gradlew.bat testDebugUnitTest` runs local JVM tests.
+- `.\gradlew.bat connectedDebugAndroidTest` runs instrumented tests on a connected device or emulator.
+- `.\gradlew.bat lintDebug` performs Android lint checks.
+- `.\gradlew.bat clean` removes generated build outputs when troubleshooting stale artifacts.
 
-✅ **Type & Scope 테이블**
-- 10가지 Type 설명 (feat, fix, docs, style 등)
-- Scope 사용법
+Open the repository root in Android Studio to run the `app` configuration interactively. Do not commit `local.properties`, `.gradle/`, `.idea/`, or generated `build/` directories.
 
-✅ **Breaking Changes 표시 방법**
-- `!` 기호 사용법
-- 명확한 설명 방법
+## Coding Style & Naming Conventions
 
-✅ **10가지 실제 예시**
-- 새로운 기능, 버그 수정, 문서 수정, 코드 스타일, 리팩토링, 성능 개선, 테스트, Breaking Change, 빌드/설정, CI/CD
+Use Kotlin's standard four-space indentation and Android Studio's default Kotlin formatter. Keep imports explicit and remove unused imports. Name classes and composables in `PascalCase`, functions and properties in `camelCase`, and resource files/IDs in `snake_case`. Composable functions should describe visible UI, such as `ProfileScreen` or `SettingsRow`, and previews should end in `Preview`. Prefer small, stateless composables with state lifted to their caller.
 
-✅ **Commit Template 활용**
-- `.gitmessage.txt` 파일 생성 및 설정 방법
-- Git 글로벌 설정
+## Testing Guidelines
 
-[AGENTS_Conventional_Commits_Guide.docx](file-server:p_SKILLS_01KVN0MZ8DQ479SBQ5Y4YTXESD.docx)에서 다운로드할 수 있습니다!
+JUnit 4 is configured for local tests; AndroidX JUnit, Espresso, and Compose UI testing are available for instrumentation tests. Name test classes after the subject under test (for example, `GreetingTest`) and use descriptive test methods such as `greeting_displaysUserName`. Add local tests for logic and instrumented tests for Android APIs, navigation, and user-visible Compose behavior. Run both unit tests and lint before submitting changes; run connected tests when UI behavior changes.
 
+## Commit & Pull Request Guidelines
+
+The current history uses a Conventional Commit-style subject (`chore: ...`). Continue with short imperative subjects such as `feat: add settings screen` or `fix: preserve theme selection`; a Korean or English description is acceptable if used consistently within the change. Pull requests should explain the problem and solution, list verification commands, link relevant issues, and include screenshots or recordings for UI changes. Keep each PR focused and call out manifest, permission, SDK, or dependency changes explicitly.
