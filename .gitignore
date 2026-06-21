@@ -1,16 +1,37 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+# Gradle / Kotlin                                                                                                                                                                                      
+.gradle/                                                                                                                                                                                               
+.kotlin/                                                                                                                                                                                               
+**/build/                                                                                                                                                                                              
+                                                                                                                                                                                                         
+# Local SDK configuration
 local.properties
-AGENTS.md
+                                                                                                                                                                                                         
+# Android Studio
+*.iml
+.idea/caches/                                                                                                                                                                                          
+.idea/libraries/                                                                                                                                                                                       
+.idea/workspace.xml                                                                                                                                                                                    
+.idea/shelf/                                                                                                                                                                                           
+.idea/navEditor.xml                                                                                                                                                                                    
+.idea/assetWizardSettings.xml                                                                                                                                                                          
+                                                                                                                                                                                                         
+# Native build                                                                                                                                                                                         
+.externalNativeBuild/                                                                                                                                                                                  
+.cxx/                                                                                                                                                                                                  
+                                                                                                                                                                                                         
+# Generated files                                                                                                                                                                                      
+captures/                                                                                                                                                                                              
+                                                                                                                                                                                                         
+# Signing credentials                           ㄹ                                                                                                                                                       
+*.jks                                                                                                                                                                                                  
+*.keystore                                                                                                                                                                                             
+keystore.properties                                                                                                                                                                                    
+                                                                                                                                                                                                         
+# API keys and environment configuration                                                                                                                                                               
+secrets.properties                                                                                                                                                                                     
+.env                                                                                                                                                                                                   
+.env.*                                                                                                                                                                                                 
+                                                                                                                                                                                                         
+# OS                                                                                                                                                                                                   
+.DS_Store                                                                                                                                                                                              
+Thumbs.db   
