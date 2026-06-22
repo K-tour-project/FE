@@ -8,12 +8,7 @@ local.properties
                                                                                                                                                                                                          
 # Android Studio
 *.iml
-.idea/caches/                                                                                                                                                                                          
-.idea/libraries/                                                                                                                                                                                       
-.idea/workspace.xml                                                                                                                                                                                    
-.idea/shelf/                                                                                                                                                                                           
-.idea/navEditor.xml                                                                                                                                                                                    
-.idea/assetWizardSettings.xml                                                                                                                                                                          
+.idea/
                                                                                                                                                                                                          
 # Native build                                                                                                                                                                                         
 .externalNativeBuild/                                                                                                                                                                                  
@@ -22,7 +17,7 @@ local.properties
 # Generated files                                                                                                                                                                                      
 captures/                                                                                                                                                                                              
                                                                                                                                                                                                          
-# Signing credentials                           ㄹ                                                                                                                                                       
+# Signing credentials
 *.jks                                                                                                                                                                                                  
 *.keystore                                                                                                                                                                                             
 keystore.properties                                                                                                                                                                                    
@@ -30,7 +25,8 @@ keystore.properties
 # API keys and environment configuration                                                                                                                                                               
 secrets.properties                                                                                                                                                                                     
 .env                                                                                                                                                                                                   
-.env.*                                                                                                                                                                                                 
+.env.*
+AGENTS.md
                                                                                                                                                                                                          
 # OS                                                                                                                                                                                                   
 .DS_Store                                                                                                                                                                                              
