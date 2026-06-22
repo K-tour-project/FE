@@ -26,7 +26,10 @@ keystore.properties
 secrets.properties                                                                                                                                                                                     
 .env                                                                                                                                                                                                   
 .env.*
+
+# Codex
 AGENTS.md
+docs/superpowers
                                                                                                                                                                                                          
 # OS                                                                                                                                                                                                   
 .DS_Store                                                                                                                                                                                              
