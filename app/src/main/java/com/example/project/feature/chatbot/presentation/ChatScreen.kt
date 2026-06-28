@@ -243,7 +243,5 @@ fun ChatInputBar(
 @Preview(showBackground = true)
 @Composable
 fun AiChatbotScreenPreview() {
-    MaterialTheme {
-        AiChatbotScreen()
-    }
+    AiChatbotScreen()
 }
