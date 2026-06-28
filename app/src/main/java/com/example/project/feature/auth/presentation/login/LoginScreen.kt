@@ -70,7 +70,7 @@ fun LoginScreen(
                     Text(
                         text = "로그인",
                         fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.ExtraBold
                     )
                 },
                 navigationIcon = {
@@ -102,7 +102,8 @@ fun LoginScreen(
                 text = "Every Trip에 오신 것을 환영합니다.\n나만의 여행을 이어가세요.",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                color = Color(0xFF2D345B)
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -112,9 +113,7 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                LoginSocialIcon("Apple", Color.Black)
                 LoginSocialIcon("카카오", Color(0xFFFEE500))
-                LoginSocialIcon("네이버", Color(0xFF03C75A))
                 LoginSocialIcon("구글", Color.LightGray)
             }
 
@@ -157,7 +156,7 @@ fun LoginScreen(
                     )
                 },
                 singleLine = true,
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(15.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = BorderGray,
                     focusedBorderColor = PrimaryBlue,
@@ -181,7 +180,7 @@ fun LoginScreen(
                     )
                 },
                 singleLine = true,
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(15.dp),
                 visualTransformation = if (passwordVisible) {
                     VisualTransformation.None
                 } else {
