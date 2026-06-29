@@ -9,9 +9,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -20,10 +23,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,7 +35,6 @@ import androidx.compose.ui.unit.sp
 val PrimaryBlue = Color(0xFF0038FF)
 val BackgroundGray = Color(0xFFF7F7F7)
 
-data class Category(val name: String, val description: String, val iconResId: Int?, val gradientColors: List<Color>)
 data class Destination(val name: String, val imageResId: Int?)
 data class Work(val name: String, val imageResId: Int?)
 
@@ -47,10 +50,6 @@ fun HomeScreen(
     onNavigateToDestination: (Destination) -> Unit = {},
     onNavigateToWork: (Work) -> Unit = {}
 ) {
-    val categories = listOf(
-        Category("작품으로 검색", "작품 속 관광지", null /* TODO: ic_location 아이콘 추가 */, listOf(Color(0xFF3C4AC9), Color(0xFF2439B7))),
-        Category("지역으로 검색", "지역 주변 촬영지", null /* TODO: ic_theme 아이콘 추가 */, listOf(Color(0xFF1A73D1), Color(0xFF124ECC))),
-    )
     val destinations = listOf(
         Destination("여기는 어디인가", null /* TODO: 이미지 추가 */),
         Destination("노벰버라운지", null /* TODO: 이미지 추가 */),
@@ -68,17 +67,30 @@ fun HomeScreen(
                 title = {
                     Text(
                         "Every Trip",
-                        fontSize = 24.sp,
+                        fontSize = 27.sp,
                         fontWeight = FontWeight.Bold,
                         color = PrimaryBlue
                     )
                 },
                 actions = {
-                    IconButton(onClick = { /* 알림 설정/확인 등 */ }) {
-                        Icon(Icons.Default.Notifications, contentDescription = "알림", tint = Color.DarkGray)
+                    Box {
+                        IconButton(onClick = { /* 알림 설정/확인 등 */ }) {
+                            Icon(
+                                Icons.Default.NotificationsNone,
+                                contentDescription = "알림",
+                                tint = Color.Black,
+                                modifier = Modifier.size(30.dp)
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(top = 9.dp, end = 9.dp)
+                                .size(8.dp)
+                                .background(Color(0xFF2878E8), CircleShape)
+                        )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                }
             )
         },
         containerColor = BackgroundGray
@@ -89,13 +101,6 @@ fun HomeScreen(
                 .padding(paddingValues),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            item {
-                Text("어디로 떠나볼까요? ✨",
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 23.sp)
-            }
-
             // 1. 검색 바
             item {
                 Spacer(modifier = Modifier.height(10.dp))
@@ -108,22 +113,29 @@ fun HomeScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = 14.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    categories.forEach { category ->
-                        CategoryItem(
-                            category = category,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            /* TODO: 해당 카테고리 여행지 목록으로 이동 */
-                        }
-                    }
+                    CategoryItem(
+                        modifier = Modifier.weight(1f),
+                        label = "작품으로 찾기",
+                        icon = Icons.Default.Movie
+                    )
+                    CategoryItem(
+                        modifier = Modifier.weight(1f),
+                        label = "작품으로 찾기",
+                        icon = Icons.Default.Movie
+                    )
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
-            // 3. 인기 관광지 섹션
+            // 3. 광고 또는 온보딩 컴포넌트
+            item {
+                PromotionBanner()
+            }
+
+            // 4. 인기 관광지 섹션
             item {
                 Spacer(modifier = Modifier.height(15.dp))
                 SectionTitle("인기 관광지 Top 5")
@@ -132,7 +144,7 @@ fun HomeScreen(
             item {
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(destinations) { destination ->
@@ -147,7 +159,7 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(15.dp))
             }
 
-            // 추천 작품 섹션
+            // 5. 추천 작품 섹션
             item {
                 Spacer(modifier = Modifier.height(24.dp))
                 SectionTitle("추천 작품")
@@ -156,7 +168,7 @@ fun HomeScreen(
             item {
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(works) { work ->
@@ -169,8 +181,6 @@ fun HomeScreen(
                     }
                 }
             }
-
-            item { Spacer(modifier = Modifier.height(16.dp)) } // 하단 여백
         }
     }
 }
@@ -180,24 +190,22 @@ fun HomeSearchBar(onClick: () -> Unit) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        color = Color(0xFFF7F9FC),
-        shape = RoundedCornerShape(24.dp),
-        shadowElevation = 2.dp,
-        border = BorderStroke(
-            width = 1.dp,
-            color = Color.Gray
-        )
+            .padding(horizontal = 14.dp),
+        shape = RoundedCornerShape(28.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE4E8EE)),
+        shadowElevation = 4.dp,
+        tonalElevation = 1.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(Icons.Default.Search, contentDescription = "검색 아이콘", tint = Color.Gray)
             Spacer(modifier = Modifier.width(12.dp))
-            Text("영화, 드라마, 장소를 검색해보세요", color = Color.Gray, fontSize = 15.sp)
+            Text("작품 또는 지역을 검색해보세요", color = Color.Gray, fontSize = 15.sp)
         }
     }
 }
@@ -206,45 +214,95 @@ fun HomeSearchBar(onClick: () -> Unit) {
 fun SectionTitle(title: String) {
     Text(
         text = title,
-        fontSize = 18.sp,
+        fontSize = 20.sp,
         fontWeight = FontWeight.Bold,
         modifier = Modifier.fillMaxWidth().padding(start = 16.dp, bottom = 12.dp)
     )
 }
 
 @Composable
-fun CategoryItem(category: Category, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Card(
-        modifier = modifier
-            .aspectRatio(3f / 1.5f)
-            .testTag("category_explore_button")
-            .clickable { onClick() },
+fun CategoryItem(modifier: Modifier, label: String, icon: ImageVector) {
+    Surface(
+        modifier = modifier,
         shape = RoundedCornerShape(15.dp),
-        colors = CardDefaults.cardColors(
-          containerColor = Color.Transparent
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        color = Color.White,
+        border = BorderStroke(1.dp, Color.Black)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(brush = Brush.linearGradient(colors = category.gradientColors))
-                .padding(10.dp),
-            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // TODO: 여기에 아이콘 이미지를 painterResource(id = ...)를 이용해 넣어주세요.
-            Icon(Icons.Default.Place, contentDescription = null, modifier = Modifier.size(45.dp), tint = PrimaryBlue)
-            Spacer(modifier = Modifier.width(3.dp))
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(category.name, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                Text(category.description, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color.White)
-            }
+            Icon(icon, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(28.dp))
+            Spacer(Modifier.width(10.dp))
+            Text(
+                text = label,
+                modifier = Modifier.weight(1f),
+                color = Color.Black,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Icon(
+                Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = PrimaryBlue,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
 
+@Composable
+private fun PromotionBanner() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp)
+            .height(132.dp)
+            .background(
+                brush = Brush.horizontalGradient(
+                    listOf(Color(0xFFEAF5FF), Color(0xFFC8E6F8), Color(0xFF7CB4D9))
+                ),
+                shape = RoundedCornerShape(18.dp)
+            )
+    ) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .padding(start = 22.dp)
+        ) {
+            Text(
+                text = "콘텐츠로 떠나는 여행",
+                color = Color(0xFF102B4C),
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Black
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "영화·드라마 촬영지와 여행 코스를 한 번에",
+                color = Color(0xFF4C6178),
+                fontSize = 13.sp
+            )
+        }
+        Icon(
+            imageVector = Icons.Default.Place,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.76f),
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 22.dp)
+                .size(72.dp)
+        )
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Box(Modifier.size(width = 14.dp, height = 5.dp).background(PrimaryBlue, CircleShape))
+            Box(Modifier.size(5.dp).background(Color.White.copy(alpha = 0.8f), CircleShape))
+            Box(Modifier.size(5.dp).background(Color.White.copy(alpha = 0.8f), CircleShape))
         }
     }
 }
@@ -303,7 +361,13 @@ fun RecommendationCard(
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .padding(8.dp)) {
-                Text(name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(name,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
