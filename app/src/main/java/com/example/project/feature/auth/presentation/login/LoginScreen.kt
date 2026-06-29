@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.NavigateBefore
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Button
@@ -68,7 +70,7 @@ fun LoginScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "로그인",
+                        text = "(아이콘)",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.ExtraBold
                     )
@@ -76,7 +78,7 @@ fun LoginScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
-                            imageVector = Icons.Default.NavigateBefore,
+                            imageVector = Icons.Default.ChevronLeft,
                             contentDescription = "뒤로가기"
                         )
                     }
@@ -114,6 +116,7 @@ fun LoginScreen(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 LoginSocialIcon("카카오", Color(0xFFFEE500))
+                LoginSocialIcon("네이버", Color(0xFF03C75A))
                 LoginSocialIcon("구글", Color.LightGray)
             }
 
@@ -149,11 +152,10 @@ fun LoginScreen(
                 onValueChange = { email = it },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = {
-                    Text(
-                        text = "이메일을 입력해 주세요",
-                        fontSize = 14.sp,
-                        color = Color.LightGray
-                    )
+                    Text(text = "이메일을 입력해 주세요", fontSize = 14.sp, color = Color.LightGray)
+                },
+                leadingIcon = {
+                    Icon(imageVector = Icons.Outlined.Email, contentDescription = "이메일")
                 },
                 singleLine = true,
                 shape = RoundedCornerShape(15.dp),
@@ -173,11 +175,10 @@ fun LoginScreen(
                 onValueChange = { password = it },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = {
-                    Text(
-                        text = "비밀번호를 입력해 주세요",
-                        fontSize = 14.sp,
-                        color = Color.LightGray
-                    )
+                    Text(text = "비밀번호를 입력해 주세요", fontSize = 14.sp, color = Color.LightGray)
+                },
+                leadingIcon = {
+                    Icon(imageVector = Icons.Outlined.Lock, contentDescription = "비밀번호")
                 },
                 singleLine = true,
                 shape = RoundedCornerShape(15.dp),
@@ -294,7 +295,8 @@ private fun LoginSocialIcon(
 
         Text(
             text = name,
-            fontSize = 12.sp,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
             color = TextGray
         )
     }
