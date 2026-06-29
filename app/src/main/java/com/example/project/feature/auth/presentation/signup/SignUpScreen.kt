@@ -42,10 +42,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-private val PrimaryBlue = Color(0xFF1457D9)
-private val TextGray = Color(0xFF102A5B)
-private val BorderGray = Color(0xFFE0E0E0)
+import com.example.project.ui.theme.NavyText
+import com.example.project.ui.theme.PrimaryBlue
+import com.example.project.ui.theme.PrimaryBlueDeep
+import com.example.project.ui.theme.SecondaryText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,7 +102,7 @@ fun SignUpScreen(
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center,
-                color = Color(0xFF2D345B)
+                color = NavyText
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -113,15 +113,15 @@ fun SignUpScreen(
                 onValueChange = { email = it },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = {
-                    Text(text = "이메일을 입력해주세요", fontSize = 14.sp, color = Color.LightGray)
+                    Text(text = "이메일을 입력해주세요", fontSize = 14.sp, color = SecondaryText)
                 },
                 leadingIcon = {
-                    Icon(imageVector = Icons.Outlined.Email, contentDescription = "이메일")
+                    Icon(imageVector = Icons.Outlined.Email, contentDescription = "이메일", tint = SecondaryText)
                 },
                 singleLine = true,
                 shape = RoundedCornerShape(15.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = BorderGray,
+                    unfocusedBorderColor = Color.LightGray,
                     focusedBorderColor = PrimaryBlue,
                     unfocusedContainerColor = Color.Transparent,
                     focusedContainerColor = Color.Transparent
@@ -136,10 +136,10 @@ fun SignUpScreen(
                 onValueChange = { password = it },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = {
-                    Text(text = "비밀번호를 입력해 주세요", fontSize = 14.sp, color = Color.LightGray)
+                    Text(text = "비밀번호를 입력해 주세요", fontSize = 14.sp, color = SecondaryText)
                 },
                 leadingIcon = {
-                    Icon(imageVector = Icons.Outlined.Lock, contentDescription = "비밀번호")
+                    Icon(imageVector = Icons.Outlined.Lock, contentDescription = "비밀번호", tint = SecondaryText)
                 },
                 singleLine = true,
                 shape = RoundedCornerShape(15.dp),
@@ -161,12 +161,12 @@ fun SignUpScreen(
                         Icon(
                             imageVector = icon,
                             contentDescription = "비밀번호 표시 전환",
-                            tint = TextGray
+                            tint = SecondaryText
                         )
                     }
                 },
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = BorderGray,
+                    unfocusedBorderColor = Color.LightGray,
                     focusedBorderColor = PrimaryBlue,
                     unfocusedContainerColor = Color.Transparent,
                     focusedContainerColor = Color.Transparent
@@ -181,10 +181,10 @@ fun SignUpScreen(
                 onValueChange = { passwordCheck = it },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = {
-                    Text(text = "비밀번호를 다시 입력해주세요", fontSize = 14.sp, color = Color.LightGray)
+                    Text(text = "비밀번호를 다시 입력해주세요", fontSize = 14.sp, color = SecondaryText)
                 },
                 leadingIcon = {
-                    Icon(imageVector = Icons.Outlined.Lock, contentDescription = "비밀번호 확인")
+                    Icon(imageVector = Icons.Outlined.Lock, contentDescription = "비밀번호 확인", tint = SecondaryText)
                 },
                 singleLine = true,
                 shape = RoundedCornerShape(15.dp),
@@ -206,12 +206,12 @@ fun SignUpScreen(
                         Icon(
                             imageVector = icon,
                             contentDescription = "비밀번호 확인 표시 전환",
-                            tint = TextGray
+                            tint = SecondaryText
                         )
                     }
                 },
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = BorderGray,
+                    unfocusedBorderColor = Color.LightGray,
                     focusedBorderColor = PrimaryBlue,
                     unfocusedContainerColor = Color.Transparent,
                     focusedContainerColor = Color.Transparent
@@ -226,15 +226,15 @@ fun SignUpScreen(
                 onValueChange = { name = it },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = {
-                    Text(text = "닉네임을 입력해주세요", fontSize = 14.sp, color = Color.LightGray)
+                    Text(text = "닉네임을 입력해주세요", fontSize = 14.sp, color = SecondaryText)
                 },
                 leadingIcon = {
-                    Icon(imageVector = Icons.Outlined.Person, contentDescription = "회원")
+                    Icon(imageVector = Icons.Outlined.Person, contentDescription = "회원", tint = SecondaryText)
                 },
                 singleLine = true,
                 shape = RoundedCornerShape(15.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = BorderGray,
+                    unfocusedBorderColor = Color.LightGray,
                     focusedBorderColor = PrimaryBlue,
                     unfocusedContainerColor = Color.Transparent,
                     focusedContainerColor = Color.Transparent
@@ -249,7 +249,7 @@ fun SignUpScreen(
             ) {
                 HorizontalDivider(
                     modifier = Modifier.fillMaxWidth(),
-                    color = BorderGray
+                    color = SecondaryText
                 )
             }
 
@@ -268,7 +268,7 @@ fun SignUpScreen(
                     .fillMaxWidth()
                     .height(52.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = PrimaryBlue
+                    containerColor = PrimaryBlueDeep
                 ),
                 shape = RoundedCornerShape(8.dp)
             ) {

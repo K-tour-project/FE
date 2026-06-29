@@ -31,8 +31,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.project.ui.theme.Border
+import com.example.project.ui.theme.PrimaryBlue
+import com.example.project.ui.theme.SecondaryText
 
-val PrimaryBlue = Color(0xFF0038FF)
 val BackgroundGray = Color(0xFFF7F7F7)
 
 data class Destination(val name: String, val imageResId: Int?)
@@ -123,8 +125,8 @@ fun HomeScreen(
                     )
                     CategoryItem(
                         modifier = Modifier.weight(1f),
-                        label = "작품으로 찾기",
-                        icon = Icons.Default.Movie
+                        label = "지역으로 찾기",
+                        icon = Icons.Default.Place
                     )
                 }
                 Spacer(modifier = Modifier.height(24.dp))
@@ -193,7 +195,7 @@ fun HomeSearchBar(onClick: () -> Unit) {
             .padding(horizontal = 14.dp),
         shape = RoundedCornerShape(28.dp),
         color = Color.White,
-        border = BorderStroke(1.dp, Color(0xFFE4E8EE)),
+        border = BorderStroke(1.dp, Border),
         shadowElevation = 4.dp,
         tonalElevation = 1.dp
     ) {
@@ -203,9 +205,9 @@ fun HomeSearchBar(onClick: () -> Unit) {
                 .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Search, contentDescription = "검색 아이콘", tint = Color.Gray)
+            Icon(Icons.Default.Search, contentDescription = "검색 아이콘", tint = SecondaryText)
             Spacer(modifier = Modifier.width(12.dp))
-            Text("작품 또는 지역을 검색해보세요", color = Color.Gray, fontSize = 15.sp)
+            Text("작품 또는 지역을 검색해보세요", color = SecondaryText, fontSize = 15.sp)
         }
     }
 }
@@ -226,7 +228,7 @@ fun CategoryItem(modifier: Modifier, label: String, icon: ImageVector) {
         modifier = modifier,
         shape = RoundedCornerShape(15.dp),
         color = Color.White,
-        border = BorderStroke(1.dp, Color.Black)
+        border = BorderStroke(1.dp, Border)
     ) {
         Row(
             modifier = Modifier.padding(14.dp),
@@ -246,7 +248,7 @@ fun CategoryItem(modifier: Modifier, label: String, icon: ImageVector) {
             Icon(
                 Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = PrimaryBlue,
+                tint = SecondaryText,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -316,7 +318,7 @@ fun RecommendationCard(
 ) {
     Card(
         modifier = Modifier
-            .width(120.dp)
+            .width(140.dp)
             .aspectRatio(type.aspectRatio)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
@@ -363,7 +365,7 @@ fun RecommendationCard(
                     .padding(8.dp)) {
                 Text(name,
                     fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = Color.White,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis

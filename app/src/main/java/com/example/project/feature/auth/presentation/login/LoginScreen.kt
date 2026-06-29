@@ -48,10 +48,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-private val PrimaryBlue = Color(0xFF1457D9)
-private val TextGray = Color(0xFF102A5B)
-private val BorderGray = Color(0xFFE0E0E0)
+import com.example.project.ui.theme.BodyText
+import com.example.project.ui.theme.NavyText
+import com.example.project.ui.theme.PrimaryBlue
+import com.example.project.ui.theme.PrimaryBlueDeep
+import com.example.project.ui.theme.SecondaryText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -105,7 +106,7 @@ fun LoginScreen(
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center,
-                color = Color(0xFF2D345B)
+                color = NavyText
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -128,19 +129,20 @@ fun LoginScreen(
             ) {
                 HorizontalDivider(
                     modifier = Modifier.weight(1f),
-                    color = BorderGray
+                    color = SecondaryText
                 )
 
                 Text(
                     text = "또는",
                     modifier = Modifier.padding(horizontal = 16.dp),
-                    fontSize = 14.sp,
-                    color = TextGray
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = BodyText
                 )
 
                 HorizontalDivider(
                     modifier = Modifier.weight(1f),
-                    color = BorderGray
+                    color = SecondaryText
                 )
             }
 
@@ -152,15 +154,15 @@ fun LoginScreen(
                 onValueChange = { email = it },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = {
-                    Text(text = "이메일을 입력해 주세요", fontSize = 14.sp, color = Color.LightGray)
+                    Text(text = "이메일을 입력해 주세요", fontSize = 14.sp, color = SecondaryText)
                 },
                 leadingIcon = {
-                    Icon(imageVector = Icons.Outlined.Email, contentDescription = "이메일")
+                    Icon(imageVector = Icons.Outlined.Email, contentDescription = "이메일", tint = SecondaryText)
                 },
                 singleLine = true,
                 shape = RoundedCornerShape(15.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = BorderGray,
+                    unfocusedBorderColor = Color.LightGray,
                     focusedBorderColor = PrimaryBlue,
                     unfocusedContainerColor = Color.Transparent,
                     focusedContainerColor = Color.Transparent
@@ -175,10 +177,10 @@ fun LoginScreen(
                 onValueChange = { password = it },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = {
-                    Text(text = "비밀번호를 입력해 주세요", fontSize = 14.sp, color = Color.LightGray)
+                    Text(text = "비밀번호를 입력해 주세요", fontSize = 14.sp, color = SecondaryText)
                 },
                 leadingIcon = {
-                    Icon(imageVector = Icons.Outlined.Lock, contentDescription = "비밀번호")
+                    Icon(imageVector = Icons.Outlined.Lock, contentDescription = "비밀번호", tint = SecondaryText)
                 },
                 singleLine = true,
                 shape = RoundedCornerShape(15.dp),
@@ -200,12 +202,12 @@ fun LoginScreen(
                         Icon(
                             imageVector = icon,
                             contentDescription = "비밀번호 표시 전환",
-                            tint = TextGray
+                            tint = SecondaryText
                         )
                     }
                 },
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = BorderGray,
+                    unfocusedBorderColor = Color.LightGray,
                     focusedBorderColor = PrimaryBlue,
                     unfocusedContainerColor = Color.Transparent,
                     focusedContainerColor = Color.Transparent
@@ -256,13 +258,14 @@ fun LoginScreen(
                 Text(
                     text = "아직 계정이 없으신가요? ",
                     fontSize = 14.sp,
-                    color = TextGray
+                    fontWeight = FontWeight.SemiBold,
+                    color = BodyText
                 )
 
                 Text(
                     text = "회원가입",
                     fontSize = 14.sp,
-                    color = PrimaryBlue,
+                    color = PrimaryBlueDeep,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .clickable(onClick = onNavigateToSignUp)
@@ -297,7 +300,7 @@ private fun LoginSocialIcon(
             text = name,
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
-            color = TextGray
+            color = BodyText
         )
     }
 }

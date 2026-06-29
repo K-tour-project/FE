@@ -22,13 +22,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.project.ui.theme.BodyText
+import com.example.project.ui.theme.Border
+import com.example.project.ui.theme.PrimaryBlue
+import com.example.project.ui.theme.SecondaryText
+import com.example.project.ui.theme.Chat
+import com.example.project.ui.theme.PrimaryBlueDeep
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AiChatbotScreen() {
     var inputText by remember { mutableStateOf("") }
-    val primaryBlue = Color(0xFF003399) // 앱 메인 파란색
-    val lightBlueBg = Color(0xFFE8F0FE) // 챗봇 말풍선 배경색
 
     Scaffold(
         topBar = {
@@ -59,8 +63,7 @@ fun AiChatbotScreen() {
             ChatInputBar(
                 inputText = inputText,
                 onInputChanged = { inputText = it },
-                onSendClicked = { /* 전송 액션 */ },
-                primaryBlue = primaryBlue
+                onSendClicked = { /* 전송 액션 */ }
             )
         },
         containerColor = Color.White
@@ -78,7 +81,7 @@ fun AiChatbotScreen() {
             item {
                 BotMessageBubble(
                     text = "안녕하세요! 어떤 여행 계획을 도와드릴까요?",
-                    backgroundColor = lightBlueBg
+                    backgroundColor = Chat
                 )
             }
 
@@ -86,7 +89,7 @@ fun AiChatbotScreen() {
             item {
                 BotMessageBubble(
                     text = "다음 중 무엇을 도와드릴까요?",
-                    backgroundColor = lightBlueBg
+                    backgroundColor = Chat
                 )
             }
 
@@ -120,12 +123,12 @@ fun AiChatbotScreen() {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .border(1.dp, lightBlueBg, RoundedCornerShape(25.dp)),
+                            .border(1.dp, Border, RoundedCornerShape(25.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = "코스 추천하기",
-                            color = primaryBlue,
+                            color = PrimaryBlue,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -156,7 +159,7 @@ fun BotMessageBubble(text: String, backgroundColor: Color) {
         ) {
             Text(
                 text = text,
-                color = Color.Black,
+                color = BodyText,
                 fontSize = 15.sp
             )
         }
@@ -168,14 +171,14 @@ fun SuggestionChipItem(text: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(20.dp))
+            .border(1.dp, Border, RoundedCornerShape(20.dp))
             .clickable { /* 옵션 클릭 액션 */ }
             .padding(horizontal = 16.dp, vertical = 14.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
-            color = Color.DarkGray,
+            color = BodyText,
             fontSize = 14.sp,
             textAlign = TextAlign.Center
         )
@@ -186,15 +189,13 @@ fun SuggestionChipItem(text: String) {
 fun ChatInputBar(
     inputText: String,
     onInputChanged: (String) -> Unit,
-    onSendClicked: () -> Unit,
-    primaryBlue: Color
+    onSendClicked: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White)
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-            .navigationBarsPadding(), // 하단 네비게이션 바 영역 확보
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         OutlinedTextField(
@@ -203,7 +204,7 @@ fun ChatInputBar(
             placeholder = {
                 Text(
                     "원하는 여행을 입력해 주세요.",
-                    color = Color.Gray,
+                    color = SecondaryText,
                     fontSize = 14.sp
                 )
             },
@@ -215,7 +216,7 @@ fun ChatInputBar(
                 focusedBorderColor = Color.Transparent,
                 unfocusedBorderColor = Color.Transparent,
                 focusedContainerColor = Color(0xFFF5F5F5),
-                unfocusedContainerColor = Color(0xFFF5F5F5)
+                unfocusedContainerColor = Chat
             ),
             singleLine = true
         )
@@ -227,7 +228,7 @@ fun ChatInputBar(
             onClick = onSendClicked,
             modifier = Modifier
                 .size(50.dp)
-                .background(primaryBlue, CircleShape)
+                .background(PrimaryBlueDeep, CircleShape)
                 .clip(CircleShape)
         ) {
             Icon(
