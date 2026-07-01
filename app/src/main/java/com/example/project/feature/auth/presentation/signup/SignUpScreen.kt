@@ -1,5 +1,6 @@
 package com.example.project.feature.auth.presentation.signup
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
@@ -18,6 +20,8 @@ import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -47,13 +51,20 @@ import com.example.project.ui.theme.PrimaryBlue
 import com.example.project.ui.theme.PrimaryBlueDeep
 import com.example.project.ui.theme.SecondaryText
 
+internal fun canSubmitSignUp(
+    termsAccepted: Boolean,
+    privacyAccepted: Boolean
+): Boolean = termsAccepted && privacyAccepted
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignUpScreen(
     onBackClick: () -> Unit = {},
     onLoginClick: (String, String) -> Unit = { _, _ -> },
     onNavigateToSignUp: () -> Unit = {},
-    onFindPasswordClick: () -> Unit = {}
+    onFindPasswordClick: () -> Unit = {},
+    onTermsClick: () -> Unit = {},
+    onPrivacyClick: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -61,6 +72,8 @@ fun SignUpScreen(
     var passwordCheck by remember { mutableStateOf("") }
     var passwordCheckVisible by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
+    var termsAccepted by remember { mutableStateOf(false) }
+    var privacyAccepted by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -256,9 +269,20 @@ fun SignUpScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             // 약관 동의
+            LegalConsentRow(
+                checked = termsAccepted,
+                label = "이용약관 동의(필수)",
+                onCheckedChange = { termsAccepted = it },
+                onLinkClick = onTermsClick
+            )
+            LegalConsentRow(
+                checked = privacyAccepted,
+                label = "개인정보 처리방침 동의(필수)",
+                onCheckedChange = { privacyAccepted = it },
+                onLinkClick = onPrivacyClick
+            )
 
-
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Button(
                 onClick = {
@@ -267,8 +291,11 @@ fun SignUpScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
+                enabled = canSubmitSignUp(termsAccepted, privacyAccepted),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = PrimaryBlueDeep
+                    containerColor = PrimaryBlueDeep,
+                    disabledContainerColor = Color.LightGray,
+                    disabledContentColor = Color.White
                 ),
                 shape = RoundedCornerShape(8.dp)
             ) {
@@ -281,6 +308,47 @@ fun SignUpScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun LegalConsentRow(
+    checked: Boolean,
+    label: String,
+    onCheckedChange: (Boolean) -> Unit,
+    onLinkClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = CheckboxDefaults.colors(
+                checkedColor = PrimaryBlue,
+                uncheckedColor = SecondaryText
+            )
+        )
+        Text(
+            text = label,
+            modifier = Modifier
+                .weight(1f)
+                .clickable(onClick = onLinkClick)
+                .padding(vertical = 12.dp),
+            color = NavyText,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium
+        )
+        IconButton(onClick = onLinkClick) {
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = "$label 상세 보기",
+                tint = SecondaryText
+            )
         }
     }
 }
