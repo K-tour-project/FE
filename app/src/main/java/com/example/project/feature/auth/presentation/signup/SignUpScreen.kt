@@ -1,6 +1,9 @@
 package com.example.project.feature.auth.presentation.signup
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,29 +11,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronLeft
-import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Visibility
-import androidx.compose.material.icons.outlined.VisibilityOff
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,17 +30,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.project.core.designsystem.component.AppTextField
+import com.example.project.core.designsystem.component.AppTopBar
+import com.example.project.core.designsystem.component.GradientButton
+import com.example.project.core.designsystem.component.PasswordTextField
 import com.example.project.ui.theme.NavyText
 import com.example.project.ui.theme.PrimaryBlue
-import com.example.project.ui.theme.PrimaryBlueDeep
 import com.example.project.ui.theme.SecondaryText
 
 internal fun canSubmitSignUp(
@@ -62,41 +56,19 @@ fun SignUpScreen(
     onBackClick: () -> Unit = {},
     onLoginClick: (String, String) -> Unit = { _, _ -> },
     onNavigateToSignUp: () -> Unit = {},
-    onFindPasswordClick: () -> Unit = {},
     onTermsClick: () -> Unit = {},
     onPrivacyClick: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
     var passwordCheck by remember { mutableStateOf("") }
-    var passwordCheckVisible by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
     var termsAccepted by remember { mutableStateOf(false) }
     var privacyAccepted by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "(아이콘)",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.Default.ChevronLeft,
-                            contentDescription = "뒤로가기"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
-                )
-            )
+            AppTopBar(title = "(아이콘)", onBackClick = onBackClick)
         },
         containerColor = Color.White
     ) { paddingValues ->
@@ -121,137 +93,42 @@ fun SignUpScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             // 이메일 입력칸
-            OutlinedTextField(
+            AppTextField(
                 value = email,
                 onValueChange = { email = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = {
-                    Text(text = "이메일을 입력해주세요", fontSize = 14.sp, color = SecondaryText)
-                },
-                leadingIcon = {
-                    Icon(imageVector = Icons.Outlined.Email, contentDescription = "이메일", tint = SecondaryText)
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(15.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedBorderColor = PrimaryBlue,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedContainerColor = Color.Transparent
-                )
+                placeholder = "이메일을 입력해주세요",
+                leadingIcon = Icons.Outlined.Email,
+                contentDescription = "이메일"
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             // 비밀번호 입력칸
-            OutlinedTextField(
+            PasswordTextField(
                 value = password,
                 onValueChange = { password = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = {
-                    Text(text = "비밀번호를 입력해 주세요", fontSize = 14.sp, color = SecondaryText)
-                },
-                leadingIcon = {
-                    Icon(imageVector = Icons.Outlined.Lock, contentDescription = "비밀번호", tint = SecondaryText)
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(15.dp),
-                visualTransformation = if (passwordVisible) {
-                    VisualTransformation.None
-                } else {
-                    PasswordVisualTransformation()
-                },
-                trailingIcon = {
-                    val icon = if (passwordVisible) {
-                        Icons.Outlined.Visibility
-                    } else {
-                        Icons.Outlined.VisibilityOff
-                    }
-
-                    IconButton(
-                        onClick = { passwordVisible = !passwordVisible }
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = "비밀번호 표시 전환",
-                            tint = SecondaryText
-                        )
-                    }
-                },
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedBorderColor = PrimaryBlue,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedContainerColor = Color.Transparent
-                )
+                placeholder = "비밀번호를 입력해 주세요"
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             // 비밀번호 확인 입력칸
-            OutlinedTextField(
+            PasswordTextField(
                 value = passwordCheck,
                 onValueChange = { passwordCheck = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = {
-                    Text(text = "비밀번호를 다시 입력해주세요", fontSize = 14.sp, color = SecondaryText)
-                },
-                leadingIcon = {
-                    Icon(imageVector = Icons.Outlined.Lock, contentDescription = "비밀번호 확인", tint = SecondaryText)
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(15.dp),
-                visualTransformation = if (passwordCheckVisible) {
-                    VisualTransformation.None
-                } else {
-                    PasswordVisualTransformation()
-                },
-                trailingIcon = {
-                    val icon = if (passwordCheckVisible) {
-                        Icons.Outlined.Visibility
-                    } else {
-                        Icons.Outlined.VisibilityOff
-                    }
-
-                    IconButton(
-                        onClick = { passwordCheckVisible = !passwordCheckVisible }
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = "비밀번호 확인 표시 전환",
-                            tint = SecondaryText
-                        )
-                    }
-                },
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedBorderColor = PrimaryBlue,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedContainerColor = Color.Transparent
-                )
+                placeholder = "비밀번호를 다시 입력해주세요",
+                contentDescription = "비밀번호 확인"
             )
 
             Spacer(modifier = Modifier.height(25.dp))
 
             // 닉네임 입력칸
-            OutlinedTextField(
+            AppTextField(
                 value = name,
                 onValueChange = { name = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = {
-                    Text(text = "닉네임을 입력해주세요", fontSize = 14.sp, color = SecondaryText)
-                },
-                leadingIcon = {
-                    Icon(imageVector = Icons.Outlined.Person, contentDescription = "회원", tint = SecondaryText)
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(15.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedBorderColor = PrimaryBlue,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedContainerColor = Color.Transparent
-                )
+                placeholder = "닉네임을 입력해주세요",
+                leadingIcon = Icons.Outlined.Person,
+                contentDescription = "회원"
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -271,41 +148,26 @@ fun SignUpScreen(
             // 약관 동의
             LegalConsentRow(
                 checked = termsAccepted,
-                label = "이용약관 동의(필수)",
+                linkText = "이용약관",
                 onCheckedChange = { termsAccepted = it },
                 onLinkClick = onTermsClick
             )
             LegalConsentRow(
                 checked = privacyAccepted,
-                label = "개인정보 처리방침 동의(필수)",
+                linkText = "개인정보 처리방침",
                 onCheckedChange = { privacyAccepted = it },
                 onLinkClick = onPrivacyClick
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
+            GradientButton(
+                text = "여행을 시작하기",
                 onClick = {
                     onLoginClick(email, password)
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
                 enabled = canSubmitSignUp(termsAccepted, privacyAccepted),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = PrimaryBlueDeep,
-                    disabledContainerColor = Color.LightGray,
-                    disabledContentColor = Color.White
-                ),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text(
-                    text = "여행을 시작하기",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -315,7 +177,7 @@ fun SignUpScreen(
 @Composable
 private fun LegalConsentRow(
     checked: Boolean,
-    label: String,
+    linkText: String,
     onCheckedChange: (Boolean) -> Unit,
     onLinkClick: () -> Unit
 ) {
@@ -325,31 +187,65 @@ private fun LegalConsentRow(
             .height(52.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Checkbox(
+        CircularCheckBox(
             checked = checked,
-            onCheckedChange = onCheckedChange,
-            colors = CheckboxDefaults.colors(
-                checkedColor = PrimaryBlue,
-                uncheckedColor = SecondaryText
+            onCheckedChange = onCheckedChange
+        )
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = linkText,
+                color = PrimaryBlue,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable(onClick = onLinkClick)
             )
-        )
-        Text(
-            text = label,
-            modifier = Modifier
-                .weight(1f)
-                .clickable(onClick = onLinkClick)
-                .padding(vertical = 12.dp),
-            color = NavyText,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium
-        )
-        IconButton(onClick = onLinkClick) {
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = "$label 상세 보기",
-                tint = SecondaryText
+
+            Text(
+                text = " 동의(필수)",
+                color = NavyText,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium
             )
         }
+    }
+}
+
+@Composable
+private fun CircularCheckBox(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(24.dp)
+            .clip(CircleShape)
+            .background(
+                if (checked) PrimaryBlue
+                else Color.Transparent
+            )
+            .border(
+                width = 1.5.dp,
+                color = if (checked) PrimaryBlue else SecondaryText,
+                shape = CircleShape
+            )
+            .clickable {onCheckedChange(!checked)},
+        contentAlignment = Alignment.Center
+    ) {
+        if (checked) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = "선택됨",
+                tint = Color.White,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+
     }
 }
 

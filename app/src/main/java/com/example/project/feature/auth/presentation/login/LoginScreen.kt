@@ -13,25 +13,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material.icons.outlined.Visibility
-import androidx.compose.material.icons.outlined.VisibilityOff
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,12 +29,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.project.core.designsystem.component.AppTextField
+import com.example.project.core.designsystem.component.AppTopBar
+import com.example.project.core.designsystem.component.GradientButton
+import com.example.project.core.designsystem.component.PasswordTextField
 import com.example.project.ui.theme.BodyText
 import com.example.project.ui.theme.NavyText
 import com.example.project.ui.theme.PrimaryBlue
@@ -64,30 +53,10 @@ fun LoginScreen(
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "(아이콘)",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.Default.ChevronLeft,
-                            contentDescription = "뒤로가기"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
-                )
-            )
+            AppTopBar(title = "(아이콘)", onBackClick = onBackClick)
         },
         containerColor = Color.White
     ) { paddingValues ->
@@ -149,69 +118,21 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // 이메일 입력칸
-            OutlinedTextField(
+            AppTextField(
                 value = email,
                 onValueChange = { email = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = {
-                    Text(text = "이메일을 입력해 주세요", fontSize = 14.sp, color = SecondaryText)
-                },
-                leadingIcon = {
-                    Icon(imageVector = Icons.Outlined.Email, contentDescription = "이메일", tint = SecondaryText)
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(15.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedBorderColor = PrimaryBlue,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedContainerColor = Color.Transparent
-                )
+                placeholder = "이메일을 입력해 주세요",
+                leadingIcon = Icons.Outlined.Email,
+                contentDescription = "이메일"
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             // 비밀번호 입력칸
-            OutlinedTextField(
+            PasswordTextField(
                 value = password,
                 onValueChange = { password = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = {
-                    Text(text = "비밀번호를 입력해 주세요", fontSize = 14.sp, color = SecondaryText)
-                },
-                leadingIcon = {
-                    Icon(imageVector = Icons.Outlined.Lock, contentDescription = "비밀번호", tint = SecondaryText)
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(15.dp),
-                visualTransformation = if (passwordVisible) {
-                    VisualTransformation.None
-                } else {
-                    PasswordVisualTransformation()
-                },
-                trailingIcon = {
-                    val icon = if (passwordVisible) {
-                        Icons.Outlined.Visibility
-                    } else {
-                        Icons.Outlined.VisibilityOff
-                    }
-
-                    IconButton(
-                        onClick = { passwordVisible = !passwordVisible }
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = "비밀번호 표시 전환",
-                            tint = SecondaryText
-                        )
-                    }
-                },
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedBorderColor = PrimaryBlue,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedContainerColor = Color.Transparent
-                )
+                placeholder = "비밀번호를 입력해 주세요"
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -230,25 +151,12 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            Button(
+            GradientButton(
+                text = "로그인",
                 onClick = {
                     onLoginClick(email, password)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = PrimaryBlue
-                ),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text(
-                    text = "로그인",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
+                }
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
