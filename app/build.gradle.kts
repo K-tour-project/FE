@@ -7,15 +7,15 @@ plugins {
 }
 
 android {
-    namespace = "com.example.project"
+    namespace = "com.everytrip.app"
     compileSdk {
-        version = release(36)
+        version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.project"
+        applicationId = "com.everytrip.app"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0"
 
