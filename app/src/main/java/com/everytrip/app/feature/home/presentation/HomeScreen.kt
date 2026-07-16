@@ -12,15 +12,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.NearMe
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -31,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.everytrip.app.core.designsystem.component.MainTopBar
 import com.everytrip.app.ui.theme.Border
 import com.everytrip.app.ui.theme.PrimaryBlue
 import com.everytrip.app.ui.theme.SecondaryText
@@ -65,34 +68,12 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Every Trip",
-                        fontSize = 27.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PrimaryBlue
-                    )
-                },
-                actions = {
-                    Box {
-                        IconButton(onClick = { /* 알림 설정/확인 등 */ }) {
-                            Icon(
-                                Icons.Default.NotificationsNone,
-                                contentDescription = "알림",
-                                tint = Color.Black,
-                                modifier = Modifier.size(30.dp)
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(top = 9.dp, end = 9.dp)
-                                .size(8.dp)
-                                .background(Color(0xFF2878E8), CircleShape)
-                        )
-                    }
-                }
+            MainTopBar(
+                title = "Every Trip",
+                icon = Icons.Default.NotificationsNone,
+                iconContentDescription = "알림",
+                onIconClick = { /* 알림 클릭 */ },
+                showBadge = true
             )
         },
         containerColor = BackgroundGray
@@ -106,8 +87,8 @@ fun HomeScreen(
             // 1. 검색 바
             item {
                 Spacer(modifier = Modifier.height(10.dp))
-                HomeSearchBar(onClick = onNavigateToSearch)
-                Spacer(modifier = Modifier.height(24.dp))
+                AISearchBar(onClick = onNavigateToSearch)
+                Spacer(modifier = Modifier.height(10.dp))
             }
 
             // 2. 카테고리 섹션
@@ -188,26 +169,66 @@ fun HomeScreen(
 }
 
 @Composable
-fun HomeSearchBar(onClick: () -> Unit) {
+fun AISearchBar(onClick: () -> Unit) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp),
+            .padding(horizontal = 14.dp)
+            .height(53.dp),
         shape = RoundedCornerShape(28.dp),
         color = Color.White,
-        border = BorderStroke(1.dp, Border),
+        border = BorderStroke(1.dp, PrimaryBlue),
         shadowElevation = 4.dp,
         tonalElevation = 1.dp
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
+                .fillMaxSize()
+                .padding(start = 18.dp, end = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Search, contentDescription = "검색 아이콘", tint = SecondaryText)
-            Spacer(modifier = Modifier.width(12.dp))
-            Text("작품 또는 지역을 검색해보세요", color = SecondaryText, fontSize = 15.sp)
+            Icon(
+                imageVector = Icons.Default.AutoAwesome,
+                contentDescription = null,
+                tint = PrimaryBlue,
+                modifier = Modifier.size(30.dp)
+            )
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            VerticalDivider(
+                modifier = Modifier.height(28.dp),
+                color = Color(0xFFE3E7EF),
+                thickness = 1.dp
+            )
+
+            Spacer(modifier = Modifier.width(17.dp))
+
+            Text(
+                text = "어떤 촬영지를 찾고 싶나요?",
+                modifier = Modifier.weight(1f),
+                color = SecondaryText,
+                fontSize = 15.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.width(6.dp))
+
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFE4EFFF)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.NearMe,
+                    contentDescription = "전송",
+                    tint = PrimaryBlue,
+                    modifier = Modifier.size(25.dp)
+                )
+            }
         }
     }
 }
@@ -225,7 +246,7 @@ fun SectionTitle(title: String) {
 @Composable
 fun CategoryItem(modifier: Modifier, label: String, icon: ImageVector) {
     Surface(
-        modifier = modifier,
+        modifier = modifier.height(50.dp),
         shape = RoundedCornerShape(15.dp),
         color = Color.White,
         border = BorderStroke(1.dp, Border)
@@ -235,7 +256,7 @@ fun CategoryItem(modifier: Modifier, label: String, icon: ImageVector) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(icon, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(28.dp))
-            Spacer(Modifier.width(10.dp))
+            Spacer(Modifier.width(5.dp))
             Text(
                 text = label,
                 modifier = Modifier.weight(1f),
