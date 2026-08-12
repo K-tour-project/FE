@@ -1,0 +1,191 @@
+package com.everytrip.app.feature.region.presentation
+
+import android.Manifest
+import android.annotation.SuppressLint
+import android.app.Application
+import android.content.Context
+import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
+import android.os.Bundle
+import android.os.Looper
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.AndroidViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+
+class RegionSearchViewModel(
+    application: Application,
+) : AndroidViewModel(application) {
+
+    private val locationManager =
+        application.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+
+    private val _uiState = MutableStateFlow(
+        RegionSearchUiState(
+            isLocationPermissionGranted = application.hasLocationPermission(),
+        ),
+    )
+    val uiState: StateFlow<RegionSearchUiState> = _uiState.asStateFlow()
+
+    private var currentLocationListener: LocationListener? = null
+
+    init {
+        if (_uiState.value.isLocationPermissionGranted) {
+            loadCurrentLocation()
+        }
+    }
+
+    fun onLocationPermissionResult(isGranted: Boolean) {
+        _uiState.update {
+            it.copy(
+                isLocationPermissionGranted = isGranted,
+                errorMessage = if (isGranted) null else "현재 위치를 표시하려면 위치 권한이 필요합니다.",
+            )
+        }
+
+        if (isGranted) {
+            loadCurrentLocation()
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    fun loadCurrentLocation() {
+        val application = getApplication<Application>()
+        if (!application.hasLocationPermission()) {
+            onLocationPermissionResult(isGranted = false)
+            return
+        }
+
+        _uiState.update {
+            it.copy(
+                isLocationPermissionGranted = true,
+                isLoadingCurrentLocation = true,
+                errorMessage = null,
+            )
+        }
+
+        val lastKnownLocation = findBestLastKnownLocation()
+        if (lastKnownLocation != null) {
+            updateCurrentLocation(lastKnownLocation)
+            return
+        }
+
+        val provider = findAvailableProvider()
+        if (provider == null) {
+            _uiState.update {
+                it.copy(
+                    isLoadingCurrentLocation = false,
+                    errorMessage = "사용 가능한 위치 제공자가 없습니다. 기기의 위치 설정을 확인해 주세요.",
+                )
+            }
+            return
+        }
+
+        currentLocationListener?.let(locationManager::removeUpdates)
+        currentLocationListener = object : LocationListener {
+            override fun onLocationChanged(location: Location) {
+                currentLocationListener?.let(locationManager::removeUpdates)
+                currentLocationListener = null
+                updateCurrentLocation(location)
+            }
+
+            @Deprecated("Deprecated in Java")
+            override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) = Unit
+
+            override fun onProviderEnabled(provider: String) = Unit
+
+            override fun onProviderDisabled(provider: String) {
+                _uiState.update {
+                    it.copy(
+                        isLoadingCurrentLocation = false,
+                        errorMessage = "위치 제공자가 비활성화되었습니다. 기기의 위치 설정을 확인해 주세요.",
+                    )
+                }
+            }
+        }
+
+        runCatching {
+            locationManager.requestLocationUpdates(
+                provider,
+                MIN_LOCATION_UPDATE_TIME_MS,
+                MIN_LOCATION_UPDATE_DISTANCE_M,
+                currentLocationListener as LocationListener,
+                Looper.getMainLooper(),
+            )
+        }.onFailure { throwable ->
+            currentLocationListener = null
+            _uiState.update {
+                it.copy(
+                    isLoadingCurrentLocation = false,
+                    errorMessage = throwable.message ?: "현재 위치를 불러오지 못했습니다.",
+                )
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun findBestLastKnownLocation(): Location? {
+        return locationManager.getProviders(true)
+            .mapNotNull { provider ->
+                runCatching { locationManager.getLastKnownLocation(provider) }.getOrNull()
+            }
+            .maxWithOrNull(
+                compareBy<Location> { it.time }
+                    .thenBy { -it.accuracy },
+            )
+    }
+
+    private fun findAvailableProvider(): String? {
+        return when {
+            locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) -> {
+                LocationManager.GPS_PROVIDER
+            }
+
+            locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) -> {
+                LocationManager.NETWORK_PROVIDER
+            }
+
+            else -> null
+        }
+    }
+
+    private fun updateCurrentLocation(location: Location) {
+        _uiState.update {
+            it.copy(
+                isLoadingCurrentLocation = false,
+                currentLocation = RegionCoordinate(
+                    latitude = location.latitude,
+                    longitude = location.longitude,
+                ),
+                errorMessage = null,
+            )
+        }
+    }
+
+    override fun onCleared() {
+        currentLocationListener?.let(locationManager::removeUpdates)
+        currentLocationListener = null
+    }
+
+    private fun Context.hasLocationPermission(): Boolean {
+        val fineLocationGranted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+        ) == PackageManager.PERMISSION_GRANTED
+        val coarseLocationGranted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+        ) == PackageManager.PERMISSION_GRANTED
+
+        return fineLocationGranted || coarseLocationGranted
+    }
+
+    private companion object {
+        const val MIN_LOCATION_UPDATE_TIME_MS = 1_000L
+        const val MIN_LOCATION_UPDATE_DISTANCE_M = 1f
+    }
+}
