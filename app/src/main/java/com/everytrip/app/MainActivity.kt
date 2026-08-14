@@ -14,9 +14,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.everytrip.app.feature.region.presentation.Detail.RegionDetailScreen
-import com.everytrip.app.feature.region.presentation.FilteredPlace
-import com.everytrip.app.feature.region.presentation.RegionSearchScreen
-import com.everytrip.app.feature.region.presentation.RegionSearchViewModel
+import com.everytrip.app.feature.region.presentation.search.FilteredPlace
+import com.everytrip.app.feature.region.presentation.search.RegionSearchScreen
+import com.everytrip.app.feature.region.presentation.search.RegionSearchViewModel
 import com.everytrip.app.ui.theme.ProjectTheme
 import com.kakao.vectormap.KakaoMapSdk
 

@@ -1,4 +1,4 @@
-package com.everytrip.app.feature.region.presentation
+package com.everytrip.app.feature.region.presentation.search
 
 data class RegionSearchUiState(
     val isLocationPermissionGranted: Boolean = false,

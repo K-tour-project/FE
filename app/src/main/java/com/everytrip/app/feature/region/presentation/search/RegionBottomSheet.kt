@@ -1,4 +1,4 @@
-package com.everytrip.app.feature.region.presentation
+package com.everytrip.app.feature.region.presentation.search
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

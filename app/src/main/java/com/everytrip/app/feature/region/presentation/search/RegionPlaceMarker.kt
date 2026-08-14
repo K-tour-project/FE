@@ -1,4 +1,4 @@
-package com.everytrip.app.feature.region.presentation
+package com.everytrip.app.feature.region.presentation.search
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image

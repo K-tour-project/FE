@@ -1,4 +1,4 @@
-package com.everytrip.app.feature.region.presentation
+package com.everytrip.app.feature.region.presentation.search
 
 import android.Manifest
 import android.annotation.SuppressLint

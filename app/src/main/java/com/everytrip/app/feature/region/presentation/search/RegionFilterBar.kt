@@ -1,4 +1,4 @@
-package com.everytrip.app.feature.region.presentation
+package com.everytrip.app.feature.region.presentation.search
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -57,12 +57,12 @@ fun RegionFilterBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 18.dp),
+            .padding(horizontal = 8.dp, vertical = 8.dp),
     ) {
         Text(
             text = "지역 필터",
             color = NavyText,
-            fontSize = 25.sp,
+            fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             lineHeight = 32.sp,
         )
@@ -112,7 +112,7 @@ private fun RegionFilterDropdown(
         Text(
             text = label,
             color = SecondaryText,
-            fontSize = 22.sp,
+            fontSize = 18.sp,
             lineHeight = 28.sp,
         )
 
@@ -124,7 +124,7 @@ private fun RegionFilterDropdown(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(64.dp)
+                    .height(45.dp)
                     .clip(FilterShape)
                     .border(width = 1.dp, color = Border, shape = FilterShape)
                     .clickable { expanded = true }
@@ -136,7 +136,7 @@ private fun RegionFilterDropdown(
                     text = selectedValue,
                     modifier = Modifier.weight(1f),
                     color = NavyText,
-                    fontSize = 25.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
