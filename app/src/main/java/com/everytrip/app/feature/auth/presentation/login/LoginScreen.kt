@@ -1,13 +1,14 @@
 package com.everytrip.app.feature.auth.presentation.login
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,8 +17,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Scaffold
@@ -35,7 +39,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.everytrip.app.R
@@ -55,7 +58,9 @@ fun LoginScreen(
     onBackClick: () -> Unit = {},
     onLoginClick: (String, String) -> Unit = { _, _ -> },
     onNavigateToSignUp: () -> Unit = {},
-    onFindPasswordClick: () -> Unit = {}
+    onFindPasswordClick: () -> Unit = {},
+    onKakaoLoginClick: () -> Unit = {},
+    onGoogleLoginClick: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -85,43 +90,6 @@ fun LoginScreen(
             )
 
             Spacer(modifier = Modifier.height(32.dp))
-
-            // 소셜 로그인 영역: 로그인 화면 전용
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                LoginSocialIcon("카카오", Color(0xFFFEE500), R.drawable.kakao_logo, 32.dp)
-                LoginSocialIcon("네이버", Color(0xFF03C75A), R.drawable.naver_logo, 22.dp)
-                LoginSocialIcon("구글", Color.White, R.drawable.google_logo, 30.dp)
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // "또는" 구분선: 로그인 화면 전용
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                HorizontalDivider(
-                    modifier = Modifier.weight(1f),
-                    color = SecondaryText
-                )
-
-                Text(
-                    text = "또는",
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = BodyText
-                )
-
-                HorizontalDivider(
-                    modifier = Modifier.weight(1f),
-                    color = SecondaryText
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
 
             // 이메일 입력칸
             AppTextField(
@@ -166,6 +134,13 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            SocialLoginSection(
+                onKakaoClick = onKakaoLoginClick,
+                onGoogleClick = onGoogleLoginClick
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -191,42 +166,112 @@ fun LoginScreen(
 }
 
 @Composable
-private fun LoginSocialIcon(
-    name: String,
-    backgroundColor: Color,
-    @DrawableRes iconRes: Int,
-    iconSize: Dp
+private fun SocialLoginSection(
+    onKakaoClick: () -> Unit,
+    onGoogleClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Column(
+        modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(
-            modifier = Modifier
-                .size(50.dp)
-                .clip(CircleShape)
-                .background(backgroundColor)
-                .border(
-                    width = 1.5.dp,
-                    color = Color.LightGray,
-                    shape = CircleShape
-                ),
-            contentAlignment = Alignment.Center
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = painterResource(id = iconRes),
-                contentDescription = "$name 로그인",
-                modifier = Modifier.size(iconSize)
+            HorizontalDivider(
+                modifier = Modifier.weight(1f),
+                color = Color(0xFFE1E6EF)
+            )
+
+            Text(
+                text = "또는",
+                modifier = Modifier.padding(horizontal = 20.dp),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = SecondaryText
+            )
+
+            HorizontalDivider(
+                modifier = Modifier.weight(1f),
+                color = Color(0xFFE1E6EF)
             )
         }
 
-        Spacer(modifier = Modifier.height(5.dp))
+        Spacer(modifier = Modifier.height(22.dp))
 
-        Text(
-            text = name,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = BodyText
+        SocialLoginButton(
+            text = "카카오로 계속하기",
+            iconRes = R.drawable.kakao_logo,
+            buttonColor = Color(0xFFFFFBED),
+            borderColor = Color(0xFFF7E6A9),
+            iconBackgroundColor = Color(0xFFFEE500),
+            onClick = onKakaoClick
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        SocialLoginButton(
+            text = "구글로 계속하기",
+            iconRes = R.drawable.google_logo,
+            buttonColor = Color.White,
+            borderColor = Color(0xFFE1E6EF),
+            iconBackgroundColor = Color.White,
+            onClick = onGoogleClick
+        )
+    }
+}
+
+@Composable
+private fun SocialLoginButton(
+    text: String,
+    @DrawableRes iconRes: Int,
+    buttonColor: Color,
+    borderColor: Color,
+    iconBackgroundColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(47.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = buttonColor,
+            contentColor = Color(0xFF111827)
+        ),
+        border = BorderStroke(1.dp, borderColor),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+        contentPadding = PaddingValues(horizontal = 24.dp)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(iconBackgroundColor),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = iconRes),
+                    contentDescription = text,
+                    modifier = Modifier.size(25.dp)
+                )
+            }
+
+            Text(
+                text = text,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF111827)
+            )
+        }
     }
 }
 

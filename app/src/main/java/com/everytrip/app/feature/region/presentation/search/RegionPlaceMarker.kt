@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -43,8 +43,7 @@ import com.everytrip.app.ui.theme.PrimaryBlue
 
 @Immutable
 data class RegionPlaceMarkerUiModel(
-    val title: String,
-    val category: String,
+    val name: String,
     val imageResId: Int? = null,
 )
 
@@ -81,38 +80,25 @@ fun RegionPlaceMarker(
         ) {
             Row(
                 modifier = Modifier
-                    .padding(horizontal = 10.dp, vertical = 10.dp),
+                    .fillMaxSize()
+                    .padding(start = 10.dp, top = 10.dp, end = 10.dp, bottom = 30.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 MarkerThumbnail(
                     place = place,
                     modifier = Modifier.size(72.dp),
                 )
-
-                Column(
+                Text(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Text(
-                        text = place.title,
-                        color = Color(0xFF111827),
-                        fontSize = 24.sp,
-                        lineHeight = 25.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(modifier = Modifier.height(3.dp))
-                    Text(
-                        text = place.category,
-                        color = PrimaryBlue,
-                        fontSize = 17.sp,
-                        lineHeight = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                    text = place.name,
+                    color = Color(0xFF111827),
+                    fontSize = 24.sp,
+                    lineHeight = 25.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
 
@@ -145,7 +131,7 @@ private fun MarkerThumbnail(
     if (place.imageResId != null) {
         Image(
             painter = painterResource(id = place.imageResId),
-            contentDescription = place.title,
+            contentDescription = place.name,
             contentScale = ContentScale.Crop,
             modifier = modifier.clip(shape),
         )
@@ -166,7 +152,7 @@ private fun MarkerThumbnail(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = place.title.markerFallbackText(),
+                text = place.name.markerFallbackText(),
                 color = PrimaryBlue,
                 fontSize = 20.sp,
                 lineHeight = 24.sp,
@@ -220,8 +206,7 @@ private object RegionPlaceMarkerShape : Shape {
 private fun RegionPlaceMarkerSelectedPreview() {
     RegionPlaceMarker(
         place = RegionPlaceMarkerUiModel(
-            title = "도깨비",
-            category = "드라마",
+            name = "노벰버"
         ),
         selected = true,
         modifier = Modifier.padding(24.dp),
@@ -233,10 +218,8 @@ private fun RegionPlaceMarkerSelectedPreview() {
 private fun RegionPlaceMarkerDefaultPreview() {
     RegionPlaceMarker(
         place = RegionPlaceMarkerUiModel(
-            title = "빈센조",
-            category = "드라마",
+            name = "기흥역 공영 주차장"
         ),
         modifier = Modifier.padding(24.dp),
     )
 }
-

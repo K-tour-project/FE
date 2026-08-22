@@ -13,7 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import com.everytrip.app.feature.region.presentation.Detail.RegionDetailScreen
+import com.everytrip.app.feature.region.presentation.detail.RegionDetailScreen
 import com.everytrip.app.feature.region.presentation.search.FilteredPlace
 import com.everytrip.app.feature.region.presentation.search.RegionSearchScreen
 import com.everytrip.app.feature.region.presentation.search.RegionSearchViewModel

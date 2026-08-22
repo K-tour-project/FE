@@ -38,9 +38,8 @@ import com.everytrip.app.ui.theme.SecondaryText
 
 @Immutable
 data class RegionFilterState(
-    val province: String = "경기도",
-    val city: String = "수원시",
-    val district: String = "팔달구",
+    val province: String = "전남광주통합특별시",
+    val city: String = "창원시 마산합포구"
 )
 
 @Composable
@@ -51,8 +50,7 @@ fun RegionFilterBar(
     onDistrictSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
     provinceOptions: List<String> = defaultProvinceOptions,
-    cityOptions: List<String> = defaultCityOptions,
-    districtOptions: List<String> = defaultDistrictOptions,
+    cityOptions: List<String> = defaultCityOptions
 ) {
     Column(
         modifier = modifier
@@ -74,25 +72,18 @@ fun RegionFilterBar(
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             RegionFilterDropdown(
-                label = "도",
+                label = "시/도",
                 selectedValue = state.province,
                 options = provinceOptions,
                 onOptionSelected = onProvinceSelected,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(0.9f),
             )
             RegionFilterDropdown(
-                label = "시",
+                label = "시/군/구",
                 selectedValue = state.city,
                 options = cityOptions,
                 onOptionSelected = onCitySelected,
-                modifier = Modifier.weight(1f),
-            )
-            RegionFilterDropdown(
-                label = "구",
-                selectedValue = state.district,
-                options = districtOptions,
-                onOptionSelected = onDistrictSelected,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1.1f),
             )
         }
     }
@@ -174,9 +165,8 @@ private fun RegionFilterDropdown(
 
 private val FilterShape = RoundedCornerShape(32.dp)
 
-val defaultProvinceOptions = listOf("경기도", "서울특별시", "인천광역시")
-val defaultCityOptions = listOf("수원시", "성남시", "고양시", "용인시")
-val defaultDistrictOptions = listOf("팔달구", "영통구", "권선구", "장안구")
+val defaultProvinceOptions = listOf("전남광주통합특별시", "서울특별시", "경기도")
+val defaultCityOptions = listOf("완도군", "용인시 기흥구", "수원시 장안구")
 
 @Preview(showBackground = true, backgroundColor = 0xFFFFFFFF, widthDp = 430)
 @Composable
