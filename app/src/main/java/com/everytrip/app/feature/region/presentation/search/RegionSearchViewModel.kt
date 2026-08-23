@@ -43,7 +43,6 @@ class RegionSearchViewModel(
         _uiState.update {
             it.copy(
                 isLocationPermissionGranted = isGranted,
-                errorMessage = if (isGranted) null else "현재 위치를 표시하려면 위치 권한이 필요합니다.",
             )
         }
 
@@ -64,7 +63,6 @@ class RegionSearchViewModel(
             it.copy(
                 isLocationPermissionGranted = true,
                 isLoadingCurrentLocation = true,
-                errorMessage = null,
             )
         }
 
@@ -79,7 +77,6 @@ class RegionSearchViewModel(
             _uiState.update {
                 it.copy(
                     isLoadingCurrentLocation = false,
-                    errorMessage = "사용 가능한 위치 제공자가 없습니다. 기기의 위치 설정을 확인해 주세요.",
                 )
             }
             return
@@ -102,7 +99,6 @@ class RegionSearchViewModel(
                 _uiState.update {
                     it.copy(
                         isLoadingCurrentLocation = false,
-                        errorMessage = "위치 제공자가 비활성화되었습니다. 기기의 위치 설정을 확인해 주세요.",
                     )
                 }
             }
@@ -116,12 +112,11 @@ class RegionSearchViewModel(
                 currentLocationListener as LocationListener,
                 Looper.getMainLooper(),
             )
-        }.onFailure { throwable ->
+        }.onFailure {
             currentLocationListener = null
             _uiState.update {
                 it.copy(
                     isLoadingCurrentLocation = false,
-                    errorMessage = throwable.message ?: "현재 위치를 불러오지 못했습니다.",
                 )
             }
         }
@@ -161,7 +156,6 @@ class RegionSearchViewModel(
                     latitude = location.latitude,
                     longitude = location.longitude,
                 ),
-                errorMessage = null,
             )
         }
     }

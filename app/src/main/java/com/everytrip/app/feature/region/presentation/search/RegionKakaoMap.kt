@@ -39,64 +39,73 @@ fun RegionKakaoMap(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val currentLocationBitmap = remember { createCurrentLocationBitmap(context) }
-    var mapView by remember { mutableStateOf<MapView?>(null) }
+    val mapView = remember(context) { MapView(context) }
     var kakaoMap by remember { mutableStateOf<KakaoMap?>(null) }
     var currentLocationLabel by remember { mutableStateOf<Label?>(null) }
 
     AndroidView(
         modifier = modifier,
-        factory = { viewContext ->
-            MapView(viewContext).also { view ->
-                mapView = view
-                view.start(
-                    object : MapLifeCycleCallback() {
-                        override fun onMapDestroy() = Unit
-
-                        override fun onMapError(exception: Exception) {
-                            onMapError(exception.message ?: "지도 화면을 불러오지 못했습니다.")
-                        }
-                    },
-                    object : KakaoMapReadyCallback() {
-                        override fun getPosition(): LatLng {
-                            return uiState.currentLocation?.toLatLng() ?: DEFAULT_REGION_POSITION
-                        }
-
-                        override fun getZoomLevel(): Int = DEFAULT_ZOOM_LEVEL
-
-                        override fun onMapReady(map: KakaoMap) {
-                            kakaoMap = map
-                        }
-                    },
-                )
-            }
-        },
+        factory = { mapView },
     )
 
-    DisposableEffect(mapView, lifecycleOwner) {
-        val view = mapView
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_RESUME -> view?.resume()
-                Lifecycle.Event.ON_PAUSE -> view?.pause()
-                else -> Unit
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
+    DisposableEffect(mapView) {
+        mapView.start(
+            object : MapLifeCycleCallback() {
+                override fun onMapDestroy() = Unit
+
+                override fun onMapError(exception: Exception) {
+                    onMapError(exception.message ?: "지도 화면을 불러오지 못했습니다.")
+                }
+            },
+            object : KakaoMapReadyCallback() {
+                override fun getPosition(): LatLng {
+                    return uiState.currentLocation?.toLatLng() ?: DEFAULT_REGION_POSITION
+                }
+
+                override fun getZoomLevel(): Int = DEFAULT_ZOOM_LEVEL
+
+                override fun onMapReady(map: KakaoMap) {
+                    kakaoMap = map
+                }
+            },
+        )
 
         onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            view?.finish()
-            mapView = null
+            mapView.finish()
             kakaoMap = null
             currentLocationLabel = null
         }
     }
 
+    DisposableEffect(mapView, lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> mapView.resume()
+                Lifecycle.Event.ON_PAUSE -> mapView.pause()
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+            mapView.resume()
+        }
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     LaunchedEffect(kakaoMap, uiState.currentLocation) {
-        val map = kakaoMap ?: return@LaunchedEffect
-        val currentLocation = uiState.currentLocation ?: return@LaunchedEffect
+        val map = kakaoMap ?: run {
+            return@LaunchedEffect
+        }
+        val currentLocation = uiState.currentLocation ?: run {
+            return@LaunchedEffect
+        }
         val position = currentLocation.toLatLng()
-        val labelLayer = map.labelManager?.layer ?: return@LaunchedEffect
+        val labelLayer = map.labelManager?.layer ?: run {
+            return@LaunchedEffect
+        }
 
         currentLocationLabel?.let { labelLayer.remove(it) }
         currentLocationLabel = labelLayer.addLabel(
@@ -117,7 +126,7 @@ private fun RegionCoordinate.toLatLng(): LatLng = LatLng.from(latitude, longitud
 
 private fun createCurrentLocationBitmap(context: Context): Bitmap {
     val density = context.resources.displayMetrics.density
-    val size = (28 * density).toInt()
+    val size = (23 * density).toInt()
     val center = size / 2f
     val outerRadius = size * 0.42f
     val innerRadius = size * 0.24f
