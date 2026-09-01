@@ -9,17 +9,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import com.everytrip.app.core.designsystem.component.MainTopBar
 
 @Composable
 fun RegionSearchScreen(
@@ -29,7 +29,6 @@ fun RegionSearchScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    var filterState by remember { mutableStateOf(RegionFilterState()) }
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
     ) { permissions ->
@@ -56,15 +55,31 @@ fun RegionSearchScreen(
             .fillMaxSize()
             .background(Color.White),
     ) {
+        MainTopBar(
+            title = "Every Trip",
+            icon = Icons.Default.NotificationsNone,
+            iconContentDescription = "알림",
+            onIconClick = { /* 알림 클릭 */ },
+            showBadge = true
+        )
+
         RegionFilterBar(
-            state = filterState,
+            state = RegionFilterState(
+                province = uiState.selectedSido?.name.orEmpty(),
+                city = uiState.selectedSigungu?.name.orEmpty(),
+            ),
+            provinceOptions = uiState.sidos.map { it.name },
+            cityOptions = uiState.sigungus.map { it.name },
+            isCityEnabled = uiState.selectedSido?.hasChildren == true,
+            isProvinceLoading = uiState.isLoadingSidos,
+            isCityLoading = uiState.isLoadingSigungus,
+            onProvinceDropdownClick = viewModel::loadSidos,
             onProvinceSelected = { province ->
-                filterState = filterState.copy(province = province)
+                viewModel.onSidoSelected(province)
             },
             onCitySelected = { city ->
-                filterState = filterState.copy(city = city)
+                viewModel.onSigunguSelected(city)
             },
-            onDistrictSelected = {},
             modifier = Modifier.fillMaxWidth(),
         )
 

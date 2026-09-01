@@ -33,7 +33,7 @@ fun MainTopBar(
         title = {
             Text(
                 text = title,
-                fontSize = 27.sp,
+                fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
                 color = PrimaryBlue
             )

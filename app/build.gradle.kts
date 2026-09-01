@@ -1,9 +1,9 @@
+import com.android.build.api.dsl.ApplicationExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
@@ -14,7 +14,10 @@ val localProperties = Properties().apply {
 val kakaoNativeAppKey =
     localProperties.getProperty("KAKAO_NATIVE_APP_KEY") ?: ""
 
-android {
+val backendBaseUrl =
+    localProperties.getProperty("BACKEND_BASE_URL") ?: ""
+
+extensions.configure<ApplicationExtension>("android") {
     namespace = "com.everytrip.app"
     compileSdk {
         version = release(37)
@@ -31,6 +34,12 @@ android {
             "String",
             "KAKAO_NATIVE_APP_KEY",
             "\"$kakaoNativeAppKey\""
+        )
+
+        buildConfigField(
+            "String",
+            "BACKEND_BASE_URL",
+            "\"$backendBaseUrl\""
         )
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -65,6 +74,7 @@ kotlin {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

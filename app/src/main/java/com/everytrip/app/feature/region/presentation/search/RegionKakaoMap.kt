@@ -95,6 +95,18 @@ fun RegionKakaoMap(
         }
     }
 
+    LaunchedEffect(kakaoMap, uiState.selectedRegionLocation) {
+        val map = kakaoMap ?: return@LaunchedEffect
+        val selectedRegionLocation = uiState.selectedRegionLocation ?: return@LaunchedEffect
+
+        map.moveCamera(
+            CameraUpdateFactory.newCenterPosition(
+                selectedRegionLocation.toLatLng(),
+                REGION_FILTER_ZOOM_LEVEL,
+            ),
+        )
+    }
+
     LaunchedEffect(kakaoMap, uiState.currentLocation) {
         val map = kakaoMap ?: run {
             return@LaunchedEffect
@@ -148,4 +160,5 @@ private val DEFAULT_REGION_POSITION = LatLng.from(37.5665, 126.9780)
 
 private const val DEFAULT_ZOOM_LEVEL = 15
 private const val CURRENT_LOCATION_ZOOM_LEVEL = 16
+private const val REGION_FILTER_ZOOM_LEVEL = 11
 private const val CURRENT_LOCATION_LABEL_ID = "current-location"
