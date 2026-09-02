@@ -23,6 +23,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.everytrip.app.ui.theme.IconGray
 import com.everytrip.app.ui.theme.PrimaryBlue
 import com.everytrip.app.ui.theme.SecondaryText
 
@@ -76,7 +77,7 @@ fun PasswordTextField(
             Icon(
                 imageVector = Icons.Outlined.Lock,
                 contentDescription = contentDescription,
-                tint = SecondaryText
+                tint = IconGray
             )
         },
         singleLine = true,

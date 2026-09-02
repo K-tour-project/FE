@@ -19,11 +19,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,7 +36,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -60,7 +67,8 @@ fun LoginScreen(
     onNavigateToSignUp: () -> Unit = {},
     onFindPasswordClick: () -> Unit = {},
     onKakaoLoginClick: () -> Unit = {},
-    onGoogleLoginClick: () -> Unit = {}
+    onGoogleLoginClick: () -> Unit = {},
+    onGuestLoginClick: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -136,7 +144,8 @@ fun LoginScreen(
 
             SocialLoginSection(
                 onKakaoClick = onKakaoLoginClick,
-                onGoogleClick = onGoogleLoginClick
+                onGoogleClick = onGoogleLoginClick,
+                onGuestClick = onGuestLoginClick
             )
 
             Spacer(modifier = Modifier.height(28.dp))
@@ -169,6 +178,7 @@ fun LoginScreen(
 private fun SocialLoginSection(
     onKakaoClick: () -> Unit,
     onGoogleClick: () -> Unit,
+    onGuestClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -219,6 +229,79 @@ private fun SocialLoginSection(
             iconBackgroundColor = Color.White,
             onClick = onGoogleClick
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        GuestLoginButton(onClick = onGuestClick)
+    }
+}
+
+@Composable
+private fun GuestLoginButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val borderColor = PrimaryBlue
+
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .drawWithContent {
+                drawContent()
+                drawRoundRect(
+                    color = borderColor,
+                    size = Size(size.width, size.height),
+                    cornerRadius = CornerRadius(12.dp.toPx(), 12.dp.toPx()),
+                    style = Stroke(
+                        width = 1.2.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(
+                            floatArrayOf(4.dp.toPx(), 4.dp.toPx()),
+                            0f
+                        )
+                    )
+                )
+            },
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.White,
+            contentColor = PrimaryBlue
+        ),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+        contentPadding = PaddingValues(horizontal = 24.dp)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Person,
+                contentDescription = "게스트 로그인",
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .size(28.dp),
+                tint = PrimaryBlue
+            )
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "게스트로 로그인",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = PrimaryBlue
+                )
+
+                Text(
+                    text = "테스트를 위한 로그인 입니다.",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = SecondaryText
+                )
+            }
+        }
     }
 }
 
