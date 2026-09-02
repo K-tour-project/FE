@@ -2,6 +2,7 @@ package com.everytrip.app.core.designsystem.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -33,6 +34,7 @@ fun AppTopBar(
     showBadge: Boolean = false,
 ) {
     CenterAlignedTopAppBar(
+        modifier = Modifier.height(80.dp),
         title = {
             Text(
                 text = title,

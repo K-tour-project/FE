@@ -3,7 +3,6 @@ package com.everytrip.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -13,6 +12,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.everytrip.app.feature.region.presentation.detail.RegionDetailScreen
 import com.everytrip.app.feature.region.presentation.search.FilteredPlace
 import com.everytrip.app.feature.region.presentation.search.RegionSearchScreen
@@ -26,7 +27,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         KakaoMapSdk.init(this, BuildConfig.KAKAO_NATIVE_APP_KEY)
-        enableEdgeToEdge()
+        WindowCompat.setDecorFitsSystemWindows(window, true)
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
         setContent {
             ProjectTheme {
                 var selectedPlace by remember { mutableStateOf<FilteredPlace?>(null) }
