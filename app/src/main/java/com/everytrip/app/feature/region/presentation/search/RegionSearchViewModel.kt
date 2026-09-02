@@ -43,6 +43,7 @@ class RegionSearchViewModel(
     val uiState: StateFlow<RegionSearchUiState> = _uiState.asStateFlow()
 
     private var currentLocationListener: LocationListener? = null
+    private var regionBoundaryRequestId = 0
 
     init {
         if (_uiState.value.isLocationPermissionGranted) {
@@ -84,12 +85,15 @@ class RegionSearchViewModel(
 
     fun onSidoSelected(sidoName: String) {
         val sido = _uiState.value.sidos.firstOrNull { it.name == sidoName } ?: return
+        regionBoundaryRequestId++
 
         _uiState.update {
             it.copy(
                 selectedSido = sido,
                 selectedSigungu = null,
+                selectedRegionId = null,
                 selectedRegionLocation = null,
+                selectedRegionPolygons = emptyList(),
                 sigungus = emptyList(),
                 regionErrorMessage = null,
             )
@@ -107,6 +111,9 @@ class RegionSearchViewModel(
         _uiState.update {
             it.copy(
                 selectedSigungu = selectedSigungu,
+                selectedRegionId = selectedSigungu.regionId,
+                selectedRegionLocation = null,
+                selectedRegionPolygons = emptyList(),
                 regionErrorMessage = null,
             )
         }
@@ -263,9 +270,11 @@ class RegionSearchViewModel(
     }
 
     private fun loadRegionBoundary(regionId: Int) {
+        val requestId = ++regionBoundaryRequestId
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
+                    selectedRegionId = regionId,
                     isLoadingRegionBounds = true,
                     regionErrorMessage = null,
                 )
@@ -273,13 +282,21 @@ class RegionSearchViewModel(
             runCatching {
                 regionRepository.getBoundary(regionId)
             }.onSuccess { boundary ->
+                if (requestId != regionBoundaryRequestId) {
+                    return@onSuccess
+                }
                 _uiState.update {
                     it.copy(
+                        selectedRegionId = boundary.regionId.takeIf { id -> id != 0 } ?: regionId,
                         selectedRegionLocation = boundary.toRegionCoordinate(),
+                        selectedRegionPolygons = boundary.polygons,
                         isLoadingRegionBounds = false,
                     )
                 }
             }.onFailure { throwable ->
+                if (requestId != regionBoundaryRequestId) {
+                    return@onFailure
+                }
                 _uiState.update {
                     it.copy(
                         isLoadingRegionBounds = false,

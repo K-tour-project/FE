@@ -13,7 +13,6 @@ data class RegionOption(
     val level: String,
     val parentRegionId: Int?,
     val hasChildren: Boolean,
-    val centroid: RegionLocation?,
 )
 
 data class RegionLocation(
@@ -21,9 +20,15 @@ data class RegionLocation(
     val longitude: Double,
 )
 
+data class RegionPolygon(
+    val outerBoundary: List<RegionLocation>,
+    val holes: List<List<RegionLocation>> = emptyList(),
+)
+
 data class RegionBoundary(
     val regionId: Int,
     val name: String,
     val fullName: String,
     val centroid: RegionLocation?,
+    val polygons: List<RegionPolygon>,
 )

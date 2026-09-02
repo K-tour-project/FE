@@ -4,6 +4,7 @@ import com.everytrip.app.BuildConfig
 import com.everytrip.app.feature.region.data.model.RegionBoundary
 import com.everytrip.app.feature.region.data.model.RegionLocation
 import com.everytrip.app.feature.region.data.model.RegionOption
+import com.everytrip.app.feature.region.data.model.RegionPolygon
 import com.everytrip.app.feature.region.data.model.Sido
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -98,7 +99,71 @@ class RegionApi(
             name = target.optString("name"),
             fullName = target.optString("full_name"),
             centroid = target.optJSONObject("centroid")?.toRegionLocation(),
+            polygons = target.extractGeoJsonPolygons(),
         )
+    }
+
+    private fun JSONObject.extractGeoJsonPolygons(): List<RegionPolygon> {
+        val geometry = when {
+            optString("type") == "Feature" -> optJSONObject("geometry")
+            has("geometry") -> optJSONObject("geometry")
+            has("boundary") -> optJSONObject("boundary")
+            has("coordinates") -> this
+            else -> null
+        }
+
+        if (geometry != null) {
+            return geometry.toRegionPolygons()
+        }
+
+        if (optString("type") == "FeatureCollection") {
+            return optJSONArray("features").orEmptyObjects().flatMap { feature ->
+                feature.optJSONObject("geometry")?.toRegionPolygons().orEmpty()
+            }
+        }
+
+        return emptyList()
+    }
+
+    private fun JSONObject.toRegionPolygons(): List<RegionPolygon> {
+        return when (optString("type")) {
+            "Polygon" -> listOfNotNull(optJSONArray("coordinates")?.toRegionPolygon())
+            "MultiPolygon" -> optJSONArray("coordinates").orEmptyArrays().mapNotNull { polygon ->
+                polygon.toRegionPolygon()
+            }
+            "GeometryCollection" -> optJSONArray("geometries").orEmptyObjects().flatMap { geometry ->
+                geometry.toRegionPolygons()
+            }
+            else -> emptyList()
+        }
+    }
+
+    private fun JSONArray.toRegionPolygon(): RegionPolygon? {
+        val rings = orEmptyArrays().map { ring ->
+            ring.toRegionLocations()
+        }.filter { ring ->
+            ring.size >= MIN_POLYGON_POINT_COUNT
+        }
+        val outerBoundary = rings.firstOrNull() ?: return null
+        return RegionPolygon(
+            outerBoundary = outerBoundary,
+            holes = rings.drop(1),
+        )
+    }
+
+    private fun JSONArray.toRegionLocations(): List<RegionLocation> {
+        return orEmptyArrays().mapNotNull { coordinate ->
+            coordinate.toRegionLocationFromGeoJsonPosition()
+        }
+    }
+
+    private fun JSONArray.toRegionLocationFromGeoJsonPosition(): RegionLocation? {
+        if (length() < GEO_JSON_POSITION_MIN_SIZE) {
+            return null
+        }
+        val longitude = runCatching { getDouble(0) }.getOrNull() ?: return null
+        val latitude = runCatching { getDouble(1) }.getOrNull() ?: return null
+        return RegionLocation(latitude = latitude, longitude = longitude)
     }
 
     private fun extractArray(json: String): JSONArray {
@@ -126,7 +191,6 @@ class RegionApi(
             level = optString("level"),
             parentRegionId = optNullableInt("parent_region_id"),
             hasChildren = optBoolean("has_children", false),
-            centroid = optJSONObject("centroid")?.toRegionLocation(),
         )
     }
 
@@ -160,7 +224,23 @@ class RegionApi(
         return List(length()) { index -> transform(get(index)) }
     }
 
+    private fun JSONArray?.orEmptyArrays(): List<JSONArray> {
+        if (this == null) {
+            return emptyList()
+        }
+        return List(length()) { index -> optJSONArray(index) }.filterNotNull()
+    }
+
+    private fun JSONArray?.orEmptyObjects(): List<JSONObject> {
+        if (this == null) {
+            return emptyList()
+        }
+        return List(length()) { index -> optJSONObject(index) }.filterNotNull()
+    }
+
     private companion object {
         const val TIMEOUT_MS = 10_000
+        const val GEO_JSON_POSITION_MIN_SIZE = 2
+        const val MIN_POLYGON_POINT_COUNT = 3
     }
 }

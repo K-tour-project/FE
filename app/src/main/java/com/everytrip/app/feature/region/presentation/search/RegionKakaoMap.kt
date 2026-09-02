@@ -19,6 +19,8 @@ import androidx.core.graphics.createBitmap
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.everytrip.app.feature.region.data.model.RegionLocation
+import com.everytrip.app.feature.region.data.model.RegionPolygon
 import com.kakao.vectormap.KakaoMap
 import com.kakao.vectormap.KakaoMapReadyCallback
 import com.kakao.vectormap.LatLng
@@ -29,6 +31,12 @@ import com.kakao.vectormap.label.Label
 import com.kakao.vectormap.label.LabelOptions
 import com.kakao.vectormap.label.LabelStyle
 import com.kakao.vectormap.label.LabelStyles
+import com.kakao.vectormap.shape.LatLngVertex
+import com.kakao.vectormap.shape.MapPoints
+import com.kakao.vectormap.shape.PolygonOptions
+import com.kakao.vectormap.shape.PolygonStyles
+import com.kakao.vectormap.shape.ShapeLayerOptions
+import com.kakao.vectormap.shape.ShapeLayerPass
 
 @Composable
 fun RegionKakaoMap(
@@ -71,6 +79,7 @@ fun RegionKakaoMap(
         )
 
         onDispose {
+            kakaoMap?.shapeManager?.getLayer(REGION_BOUNDARY_LAYER_ID)?.removeAll()
             mapView.finish()
             kakaoMap = null
             currentLocationLabel = null
@@ -107,6 +116,40 @@ fun RegionKakaoMap(
         )
     }
 
+    LaunchedEffect(kakaoMap, uiState.selectedRegionId, uiState.selectedRegionPolygons) {
+        val map = kakaoMap ?: return@LaunchedEffect
+        val shapeManager = map.shapeManager ?: return@LaunchedEffect
+        val shapeLayer = shapeManager.getLayer(REGION_BOUNDARY_LAYER_ID)
+            ?: shapeManager.addLayer(
+                ShapeLayerOptions.from(
+                    REGION_BOUNDARY_LAYER_ID,
+                    REGION_BOUNDARY_Z_ORDER,
+                    ShapeLayerPass.Overlay,
+                ),
+            )
+
+        shapeLayer.removeAll()
+        if (uiState.selectedRegionPolygons.isEmpty()) {
+            return@LaunchedEffect
+        }
+
+        val polygonStyles = PolygonStyles.from(
+            REGION_BOUNDARY_FILL_COLOR,
+            REGION_BOUNDARY_STROKE_WIDTH,
+            REGION_BOUNDARY_STROKE_COLOR,
+        )
+        val polygonOptions = PolygonOptions.from(
+            "$REGION_BOUNDARY_POLYGON_ID-${uiState.selectedRegionId ?: 0}",
+        )
+            .setZOrder(REGION_BOUNDARY_Z_ORDER)
+
+        uiState.selectedRegionPolygons.forEach { regionPolygon ->
+            polygonOptions.addPolygon(regionPolygon.toMapPoints(), polygonStyles)
+        }
+
+        shapeLayer.addPolygon(polygonOptions)
+    }
+
     LaunchedEffect(kakaoMap, uiState.currentLocation) {
         val map = kakaoMap ?: run {
             return@LaunchedEffect
@@ -136,6 +179,19 @@ fun RegionKakaoMap(
 
 private fun RegionCoordinate.toLatLng(): LatLng = LatLng.from(latitude, longitude)
 
+private fun RegionLocation.toLatLng(): LatLng = LatLng.from(latitude, longitude)
+
+private fun RegionPolygon.toMapPoints(): MapPoints {
+    val mapPoints = MapPoints.fromLatLng(outerBoundary.map { location -> location.toLatLng() })
+    if (holes.isNotEmpty()) {
+        val holeVertices = holes.map { hole ->
+            LatLngVertex.from(hole.map { location -> location.toLatLng() })
+        }.toTypedArray()
+        mapPoints.setHolePoints(*holeVertices)
+    }
+    return mapPoints
+}
+
 private fun createCurrentLocationBitmap(context: Context): Bitmap {
     val density = context.resources.displayMetrics.density
     val size = (23 * density).toInt()
@@ -162,3 +218,9 @@ private const val DEFAULT_ZOOM_LEVEL = 15
 private const val CURRENT_LOCATION_ZOOM_LEVEL = 16
 private const val REGION_FILTER_ZOOM_LEVEL = 11
 private const val CURRENT_LOCATION_LABEL_ID = "current-location"
+private const val REGION_BOUNDARY_POLYGON_ID = "selected-region-boundary"
+private const val REGION_BOUNDARY_LAYER_ID = "selected-region-boundary-layer"
+private const val REGION_BOUNDARY_STROKE_WIDTH = 4f
+private const val REGION_BOUNDARY_Z_ORDER = 10_000
+private val REGION_BOUNDARY_STROKE_COLOR = Color.rgb(29, 114, 248)
+private val REGION_BOUNDARY_FILL_COLOR = Color.argb(48, 29, 114, 248)
