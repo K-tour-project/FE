@@ -112,6 +112,10 @@ class MainActivity : ComponentActivity() {
                         RegionSearchScreen(
                             viewModel = regionSearchViewModel,
                             onRegionPlaceClick = { selectedPlace = it },
+                            onTitleClick = {
+                                selectedPlace = null
+                                mainDestination = MainDestination.Home
+                            },
                         )
                     }
 

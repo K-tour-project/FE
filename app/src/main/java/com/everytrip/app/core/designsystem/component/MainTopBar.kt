@@ -1,6 +1,7 @@
 package com.everytrip.app.core.designsystem.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -28,6 +29,7 @@ fun MainTopBar(
     icon: ImageVector,
     iconContentDescription: String,
     onIconClick: () -> Unit,
+    onTitleClick: () -> Unit = {},
     showBadge: Boolean = false
 ) {
     TopAppBar(
@@ -37,7 +39,8 @@ fun MainTopBar(
                 text = title,
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
-                color = PrimaryBlue
+                color = PrimaryBlue,
+                modifier = Modifier.clickable(onClick = onTitleClick),
             )
         },
         actions = {

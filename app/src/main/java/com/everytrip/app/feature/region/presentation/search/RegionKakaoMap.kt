@@ -223,4 +223,4 @@ private const val REGION_BOUNDARY_LAYER_ID = "selected-region-boundary-layer"
 private const val REGION_BOUNDARY_STROKE_WIDTH = 4f
 private const val REGION_BOUNDARY_Z_ORDER = 10_000
 private val REGION_BOUNDARY_STROKE_COLOR = Color.rgb(29, 114, 248)
-private val REGION_BOUNDARY_FILL_COLOR = Color.argb(48, 29, 114, 248)
+private val REGION_BOUNDARY_FILL_COLOR = Color.argb(37, 29, 114, 248)

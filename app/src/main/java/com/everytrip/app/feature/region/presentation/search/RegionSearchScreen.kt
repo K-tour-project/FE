@@ -25,6 +25,7 @@ import com.everytrip.app.core.designsystem.component.MainTopBar
 fun RegionSearchScreen(
     viewModel: RegionSearchViewModel,
     onRegionPlaceClick: (FilteredPlace) -> Unit,
+    onTitleClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -60,6 +61,7 @@ fun RegionSearchScreen(
             icon = Icons.Default.NotificationsNone,
             iconContentDescription = "알림",
             onIconClick = { /* 알림 클릭 */ },
+            onTitleClick = onTitleClick,
             showBadge = true
         )
 
