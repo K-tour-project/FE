@@ -2,8 +2,8 @@ package com.everytrip.app.feature.auth.presentation.signup
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
@@ -30,6 +32,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -57,96 +61,107 @@ import com.everytrip.app.ui.theme.SecondaryText
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.seconds
 
-private const val VerificationTimeoutSeconds = 180
-
 internal fun canSubmitSignUp(
     termsAccepted: Boolean,
-    privacyAccepted: Boolean
+    privacyAccepted: Boolean,
 ): Boolean = termsAccepted && privacyAccepted
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignUpScreen(
+    uiState: SignUpUiState = SignUpUiState(),
     onBackClick: () -> Unit = {},
-    onLoginClick: (String, String) -> Unit = { _, _ -> },
-    onNavigateToSignUp: () -> Unit = {},
+    onSendCodeClick: (String) -> Unit = {},
+    onVerifyCodeClick: (String, String) -> Unit = { _, _ -> },
+    onSignUpClick: (String, String, String, String) -> Unit = { _, _, _, _ -> },
     onTermsClick: () -> Unit = {},
-    onPrivacyClick: () -> Unit = {}
+    onPrivacyClick: () -> Unit = {},
+    onMessageShown: () -> Unit = {},
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordCheck by remember { mutableStateOf("") }
-    var name by remember { mutableStateOf("") }
+    var nickname by remember { mutableStateOf("") }
     var termsAccepted by remember { mutableStateOf(false) }
     var privacyAccepted by remember { mutableStateOf(false) }
     var verificationCode by remember { mutableStateOf("") }
     var verificationTimeLeft by remember { mutableIntStateOf(0) }
-    var hasRequestedVerification by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState.expiresIn, uiState.codeSent) {
+        if (uiState.codeSent && uiState.expiresIn > 0) {
+            verificationTimeLeft = uiState.expiresIn
+        }
+    }
 
     LaunchedEffect(verificationTimeLeft) {
-        if (verificationTimeLeft > 0) {
+        if (verificationTimeLeft > 0 && !uiState.emailVerified) {
             delay(1.seconds)
             verificationTimeLeft -= 1
         }
     }
 
+    LaunchedEffect(uiState.message) {
+        val message = uiState.message ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        onMessageShown()
+    }
+
     Scaffold(
         topBar = {
-            AppTopBar(title = "(아이콘)", onBackClick = onBackClick)
+            AppTopBar(title = "회원가입", onBackClick = onBackClick)
         },
-        containerColor = Color.White
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = Color.White,
     ) { paddingValues ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-
             Text(
-                text = "Every Trip에 오신 것을 환영합니다.\n나만의 여행을 시작해보세요",
+                text = "Every Trip에 오신 것을 환영합니다.\n이메일 인증 후 가입을 완료해 주세요.",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center,
-                color = NavyText
+                color = NavyText,
             )
 
             Spacer(modifier = Modifier.height(22.dp))
-
             ProfilePhotoPicker()
-
             Spacer(modifier = Modifier.height(22.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                // 이메일 입력칸
                 AppTextField(
                     value = email,
-                    onValueChange = { email = it },
-                    placeholder = "이메일 주소를 입력해주세요",
+                    onValueChange = {
+                        email = it
+                        verificationCode = ""
+                    },
+                    placeholder = "이메일 주소를 입력해 주세요",
                     leadingIcon = Icons.Outlined.Email,
                     contentDescription = "이메일",
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
 
                 Spacer(modifier = Modifier.width(8.dp))
 
                 OutlinedActionButton(
                     text = when {
+                        uiState.isSendingCode -> "발송 중"
                         verificationTimeLeft > 0 -> verificationTimeLeft.toTimerText()
-                        hasRequestedVerification -> "재전송"
+                        uiState.codeSent -> "재전송"
                         else -> "코드 전송"
                     },
-                    onClick = {
-                        hasRequestedVerification = true
-                        verificationTimeLeft = VerificationTimeoutSeconds
-                    },
-                    modifier = Modifier.width(87.dp)
+                    enabled = !uiState.isSendingCode && email.isNotBlank(),
+                    onClick = { onSendCodeClick(email) },
+                    modifier = Modifier.width(92.dp),
                 )
             }
 
@@ -154,115 +169,106 @@ fun SignUpScreen(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 AppTextField(
                     value = verificationCode,
-                    onValueChange = { verificationCode = it.take(6) },
+                    onValueChange = { input ->
+                        verificationCode = input.filter { it.isDigit() }.take(6)
+                    },
                     placeholder = "인증코드 6자리",
                     leadingIcon = Icons.Outlined.VerifiedUser,
-                    contentDescription = "인증번호",
-                    modifier = Modifier.width(160.dp)
+                    contentDescription = "인증코드",
+                    modifier = Modifier.weight(1f),
                 )
 
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.width(8.dp))
 
                 FilledActionButton(
-                    onClick = {},
-                    modifier = Modifier.width(87.dp)
+                    text = if (uiState.emailVerified) "완료" else "확인",
+                    enabled = uiState.codeSent &&
+                        !uiState.emailVerified &&
+                        !uiState.isVerifyingCode &&
+                        verificationCode.length == 6,
+                    onClick = { onVerifyCodeClick(email, verificationCode) },
+                    modifier = Modifier.width(92.dp),
                 )
             }
 
-            if (verificationTimeLeft > 0) {
-                Row(
+            if (uiState.codeSent && !uiState.emailVerified) {
+                Text(
+                    text = "인증코드가 이메일로 발송되었습니다.",
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "인증번호가 이메일로 발송되었습니다.",
-                        fontSize = 12.sp,
-                        color = SecondaryText
-                    )
-                }
+                        .padding(top = 8.dp, start = 12.dp),
+                    fontSize = 12.sp,
+                    color = SecondaryText,
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 닉네임 입력칸
             AppTextField(
-                value = name,
-                onValueChange = { name = it },
-                placeholder = "닉네임을 입력해주세요",
+                value = nickname,
+                onValueChange = { nickname = it },
+                placeholder = "닉네임을 입력해 주세요",
                 leadingIcon = Icons.Outlined.Person,
-                contentDescription = "회원"
+                contentDescription = "닉네임",
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 비밀번호 입력칸
             PasswordTextField(
                 value = password,
                 onValueChange = { password = it },
-                placeholder = "비밀번호를 입력해 주세요"
+                placeholder = "비밀번호를 입력해 주세요",
             )
 
             Text(
-                text = "영문, 숫자, 특수문자 포함 8자 이상",
+                text = "8자 이상, 영문과 숫자 포함, 최대 72바이트",
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 3.dp, start = 12.dp),
                 fontSize = 12.sp,
-                color = SecondaryText
+                color = SecondaryText,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 비밀번호 확인 입력칸
             PasswordTextField(
                 value = passwordCheck,
                 onValueChange = { passwordCheck = it },
-                placeholder = "비밀번호를 다시 입력해주세요",
-                contentDescription = "비밀번호 확인"
+                placeholder = "비밀번호를 다시 입력해 주세요",
+                contentDescription = "비밀번호 확인",
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 구분선
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                HorizontalDivider(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = SecondaryText
-                )
-            }
+            HorizontalDivider(color = SecondaryText.copy(alpha = 0.35f))
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 약관 동의
             LegalConsentRow(
                 checked = termsAccepted,
                 linkText = "이용약관",
                 onCheckedChange = { termsAccepted = it },
-                onLinkClick = onTermsClick
+                onLinkClick = onTermsClick,
             )
             LegalConsentRow(
                 checked = privacyAccepted,
                 linkText = "개인정보 처리방침",
                 onCheckedChange = { privacyAccepted = it },
-                onLinkClick = onPrivacyClick
+                onLinkClick = onPrivacyClick,
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             GradientButton(
-                text = "여행을 시작하기",
-                onClick = {
-                    onLoginClick(email, password)
-                },
-                enabled = canSubmitSignUp(termsAccepted, privacyAccepted),
+                text = if (uiState.isSigningUp) "가입 중" else "회원가입 완료",
+                onClick = { onSignUpClick(email, password, passwordCheck, nickname) },
+                enabled = canSubmitSignUp(termsAccepted, privacyAccepted) &&
+                    uiState.emailVerified &&
+                    !uiState.isSigningUp,
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -272,15 +278,15 @@ fun SignUpScreen(
 
 @Composable
 private fun ProfilePhotoPicker(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
             modifier = Modifier.size(96.dp),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Box(
                 modifier = Modifier
@@ -288,13 +294,13 @@ private fun ProfilePhotoPicker(
                     .clip(CircleShape)
                     .background(Color(0xFFF3F7FF))
                     .border(1.5.dp, PrimaryBlue, CircleShape),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.Filled.Person,
                     contentDescription = null,
                     modifier = Modifier.size(56.dp),
-                    tint = Color(0xFF9DBEFF)
+                    tint = Color(0xFF9DBEFF),
                 )
             }
 
@@ -304,13 +310,13 @@ private fun ProfilePhotoPicker(
                     .size(34.dp)
                     .clip(CircleShape)
                     .background(PrimaryBlue),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.Filled.CameraAlt,
                     contentDescription = "프로필 사진 선택",
                     modifier = Modifier.size(20.dp),
-                    tint = Color.White
+                    tint = Color.White,
                 )
             }
         }
@@ -318,10 +324,10 @@ private fun ProfilePhotoPicker(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "프로필 사진을 선택하세요",
+            text = "프로필 사진을 선택해 주세요",
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
-            color = NavyText
+            color = NavyText,
         )
     }
 }
@@ -329,47 +335,56 @@ private fun ProfilePhotoPicker(
 @Composable
 private fun OutlinedActionButton(
     text: String,
+    enabled: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.height(40.dp),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(13.dp),
+        enabled = enabled,
+        modifier = modifier.height(52.dp),
+        shape = RoundedCornerShape(13.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.White,
-            contentColor = PrimaryBlue
+            contentColor = PrimaryBlue,
+            disabledContainerColor = Color.White,
+            disabledContentColor = SecondaryText,
         ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, PrimaryBlue),
+        border = BorderStroke(1.dp, if (enabled) PrimaryBlue else SecondaryText.copy(alpha = 0.45f)),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
-        contentPadding = PaddingValues(horizontal = 8.dp)
+        contentPadding = PaddingValues(horizontal = 8.dp),
     ) {
         Text(
             text = text,
             fontSize = 13.sp,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
     }
 }
 
 @Composable
 private fun FilledActionButton(
+    text: String,
+    enabled: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.height(40.dp),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(13.dp),
+        enabled = enabled,
+        modifier = modifier.height(52.dp),
+        shape = RoundedCornerShape(13.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color(0xFFDDEAFF),
-            contentColor = PrimaryBlue
+            contentColor = PrimaryBlue,
+            disabledContainerColor = Color(0xFFE8EEF7),
+            disabledContentColor = SecondaryText,
         ),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
-        contentPadding = PaddingValues(horizontal = 8.dp)
+        contentPadding = PaddingValues(horizontal = 8.dp),
     ) {
         Text(
-            text = "확인",
+            text = text,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
         )
@@ -387,38 +402,37 @@ private fun LegalConsentRow(
     checked: Boolean,
     linkText: String,
     onCheckedChange: (Boolean) -> Unit,
-    onLinkClick: () -> Unit
+    onLinkClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(35.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         CircularCheckBox(
             checked = checked,
-            onCheckedChange = onCheckedChange
+            onCheckedChange = onCheckedChange,
         )
 
         Spacer(modifier = Modifier.width(12.dp))
 
         Row(
             modifier = Modifier.weight(1f),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = linkText,
                 color = PrimaryBlue,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.clickable(onClick = onLinkClick)
+                modifier = Modifier.clickable(onClick = onLinkClick),
             )
-
             Text(
                 text = " 동의(필수)",
                 color = NavyText,
                 fontSize = 15.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
         }
     }
@@ -427,33 +441,29 @@ private fun LegalConsentRow(
 @Composable
 private fun CircularCheckBox(
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
 ) {
     Box(
         modifier = Modifier
             .size(21.dp)
             .clip(CircleShape)
-            .background(
-                if (checked) PrimaryBlue
-                else Color.Transparent
-            )
+            .background(if (checked) PrimaryBlue else Color.Transparent)
             .border(
                 width = 1.5.dp,
                 color = if (checked) PrimaryBlue else SecondaryText,
-                shape = CircleShape
+                shape = CircleShape,
             )
-            .clickable {onCheckedChange(!checked)},
-        contentAlignment = Alignment.Center
+            .clickable { onCheckedChange(!checked) },
+        contentAlignment = Alignment.Center,
     ) {
         if (checked) {
             Icon(
                 imageVector = Icons.Default.Check,
                 contentDescription = "선택됨",
                 tint = Color.White,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(16.dp),
             )
         }
-
     }
 }
 

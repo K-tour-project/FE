@@ -52,6 +52,7 @@ enum class RecommendationCardType(val aspectRatio: Float) {
 @Composable
 fun HomeScreen(
     onNavigateToSearch: () -> Unit = {},
+    onNavigateToRegionSearch: () -> Unit = {},
     onNavigateToDestination: (Destination) -> Unit = {},
     onNavigateToWork: (Work) -> Unit = {}
 ) {
@@ -102,12 +103,14 @@ fun HomeScreen(
                     CategoryItem(
                         modifier = Modifier.weight(1f),
                         label = "작품으로 찾기",
-                        icon = Icons.Default.Movie
+                        icon = Icons.Default.Movie,
+                        onClick = onNavigateToSearch,
                     )
                     CategoryItem(
                         modifier = Modifier.weight(1f),
                         label = "지역으로 찾기",
-                        icon = Icons.Default.Place
+                        icon = Icons.Default.Place,
+                        onClick = onNavigateToRegionSearch,
                     )
                 }
                 Spacer(modifier = Modifier.height(24.dp))
@@ -244,9 +247,16 @@ fun SectionTitle(title: String) {
 }
 
 @Composable
-fun CategoryItem(modifier: Modifier, label: String, icon: ImageVector) {
+fun CategoryItem(
+    modifier: Modifier,
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit = {},
+) {
     Surface(
-        modifier = modifier.height(50.dp),
+        modifier = modifier
+            .height(50.dp)
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(15.dp),
         color = Color.White,
         border = BorderStroke(1.dp, Border)
