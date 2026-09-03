@@ -23,10 +23,10 @@ import com.everytrip.app.core.designsystem.component.MainTopBar
 
 @Composable
 fun RegionSearchScreen(
+    modifier: Modifier = Modifier,
     viewModel: RegionSearchViewModel,
     onRegionPlaceClick: (FilteredPlace) -> Unit,
-    onTitleClick: () -> Unit = {},
-    modifier: Modifier = Modifier,
+    onTitleClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
