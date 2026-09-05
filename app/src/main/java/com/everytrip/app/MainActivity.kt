@@ -28,6 +28,7 @@ import com.everytrip.app.feature.region.presentation.search.RegionSearchScreen
 import com.everytrip.app.feature.region.presentation.search.RegionSearchViewModel
 import com.everytrip.app.ui.theme.PrimaryBlue
 import com.everytrip.app.ui.theme.ProjectTheme
+import com.kakao.sdk.user.UserApiClient
 import com.kakao.vectormap.KakaoMapSdk
 
 class MainActivity : ComponentActivity() {
@@ -80,7 +81,17 @@ class MainActivity : ComponentActivity() {
                                     selectedPlace = null
                                 },
                                 onKakaoLoginClick = {
-                                    loginViewModel.showMessage("카카오 SDK 토큰 연결 후 로그인할 수 있습니다.")
+                                    UserApiClient.instance.loginWithKakao(this@MainActivity) { token, error ->
+                                        when {
+                                            error != null -> {
+                                                loginViewModel.showMessage("카카오 로그인에 실패했습니다.")
+                                            }
+
+                                            token != null -> {
+                                                loginViewModel.kakaoLogin(token.accessToken)
+                                            }
+                                        }
+                                    }
                                 },
                                 onGoogleLoginClick = {
                                     loginViewModel.showMessage("구글 SDK 토큰 연결 후 로그인할 수 있습니다.")

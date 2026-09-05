@@ -30,6 +30,8 @@ extensions.configure<ApplicationExtension>("android") {
         versionCode = 1
         versionName = "1.0"
 
+        manifestPlaceholders["KAKAO_NATIVE_APP_KEY"] = kakaoNativeAppKey
+
         buildConfigField(
             "String",
             "KAKAO_NATIVE_APP_KEY",
@@ -83,6 +85,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.kakao.map)
+    implementation(libs.kakao.user)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
