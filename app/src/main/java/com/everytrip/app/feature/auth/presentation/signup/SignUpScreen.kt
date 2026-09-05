@@ -109,7 +109,7 @@ fun SignUpScreen(
 
     Scaffold(
         topBar = {
-            AppTopBar(title = "회원가입", onBackClick = onBackClick)
+            AppTopBar(title1 = "Every", title2 = "Trip", onBackClick = onBackClick)
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = Color.White,

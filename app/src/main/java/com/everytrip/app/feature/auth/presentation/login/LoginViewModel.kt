@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.everytrip.app.feature.auth.data.remote.AuthHttpException
+import com.everytrip.app.feature.auth.data.remote.SessionExpiredException
 import com.everytrip.app.feature.auth.data.repository.AuthRepository
 import com.everytrip.app.feature.auth.data.repository.AuthRepositoryImpl
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +21,7 @@ class LoginViewModel(
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
     init {
-        repository.getOrCreateDeviceId()
+        repository.initializeDeviceId()
         checkExistingSession()
     }
 
@@ -40,10 +41,12 @@ class LoginViewModel(
                     }
                 }
                 .onFailure { error ->
-                    if (error is AuthHttpException && error.statusCode == 401) {
-                        refreshSessionAfterUnauthorized()
-                    } else {
+                    if (error is SessionExpiredException) {
                         repository.clearTokens()
+                        _uiState.update {
+                            it.copy(isCheckingSession = false, user = null, message = null)
+                        }
+                    } else {
                         _uiState.update {
                             it.copy(isCheckingSession = false, user = null, message = error.toUserMessage())
                         }
@@ -108,21 +111,6 @@ class LoginViewModel(
 
     fun clearMessage() {
         _uiState.update { it.copy(message = null) }
-    }
-
-    private suspend fun refreshSessionAfterUnauthorized() {
-        runCatching { repository.refresh() }
-            .onSuccess { session ->
-                _uiState.update {
-                    it.copy(isCheckingSession = false, user = session.user, message = null)
-                }
-            }
-            .onFailure {
-                repository.clearTokens()
-                _uiState.update {
-                    it.copy(isCheckingSession = false, user = null, message = null)
-                }
-            }
     }
 
     private fun Throwable.toLoginMessage(): String {

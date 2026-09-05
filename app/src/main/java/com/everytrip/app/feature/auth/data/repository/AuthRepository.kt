@@ -7,6 +7,7 @@ import com.everytrip.app.feature.auth.data.model.EmailVerifyResponse
 import com.everytrip.app.feature.auth.data.model.SignUpResponse
 
 interface AuthRepository {
+    fun initializeDeviceId(): String
     fun getOrCreateDeviceId(): String
     fun getStoredAccessToken(): String?
     fun getStoredRefreshToken(): String?

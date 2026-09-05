@@ -212,8 +212,7 @@ class AuthApi(
             return fallback
         }
         return runCatching {
-            val detail = JSONObject(body).opt("detail")
-            when (detail) {
+            when (val detail = JSONObject(body).opt("detail")) {
                 is String -> detail
                 null -> fallback
                 else -> detail.toString()

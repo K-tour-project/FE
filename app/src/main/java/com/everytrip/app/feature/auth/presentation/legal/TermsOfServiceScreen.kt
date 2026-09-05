@@ -15,7 +15,7 @@ fun TermsOfServiceScreen(
 ) {
     Scaffold(
         topBar = {
-            AppTopBar(title = "이용약관", onBackClick = onBackClick)
+            AppTopBar(title1 = "이용 약관", title2 = "" ,onBackClick = onBackClick)
         },
         containerColor = Color.White
     ) { paddingValues ->

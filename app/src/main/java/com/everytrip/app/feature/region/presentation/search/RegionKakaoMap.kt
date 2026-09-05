@@ -14,6 +14,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.createBitmap
 import androidx.lifecycle.Lifecycle
@@ -24,6 +26,7 @@ import com.everytrip.app.feature.region.data.model.RegionPolygon
 import com.kakao.vectormap.KakaoMap
 import com.kakao.vectormap.KakaoMapReadyCallback
 import com.kakao.vectormap.LatLng
+import com.kakao.vectormap.LatLngBounds
 import com.kakao.vectormap.MapLifeCycleCallback
 import com.kakao.vectormap.MapView
 import com.kakao.vectormap.camera.CameraUpdateFactory
@@ -45,6 +48,7 @@ fun RegionKakaoMap(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val cameraPadding = with(LocalDensity.current) { REGION_BOUNDARY_CAMERA_PADDING_DP.dp.roundToPx() }
     val lifecycleOwner = LocalLifecycleOwner.current
     val currentLocationBitmap = remember { createCurrentLocationBitmap(context) }
     val mapView = remember(context) { MapView(context) }
@@ -104,10 +108,16 @@ fun RegionKakaoMap(
         }
     }
 
-    LaunchedEffect(kakaoMap, uiState.selectedRegionLocation) {
+    LaunchedEffect(kakaoMap, uiState.selectedRegionLocation, uiState.selectedRegionPolygons) {
         val map = kakaoMap ?: return@LaunchedEffect
-        val selectedRegionLocation = uiState.selectedRegionLocation ?: return@LaunchedEffect
+        val selectedRegionLocation = uiState.selectedRegionLocation
 
+        uiState.selectedRegionPolygons.toLatLngBounds()?.let { bounds ->
+            map.moveCamera(CameraUpdateFactory.fitMapPoints(bounds, cameraPadding))
+            return@LaunchedEffect
+        }
+
+        selectedRegionLocation ?: return@LaunchedEffect
         map.moveCamera(
             CameraUpdateFactory.newCenterPosition(
                 selectedRegionLocation.toLatLng(),
@@ -192,6 +202,23 @@ private fun RegionPolygon.toMapPoints(): MapPoints {
     return mapPoints
 }
 
+private fun List<RegionPolygon>.toLatLngBounds(): LatLngBounds? {
+    val coordinates = flatMap { polygon -> polygon.outerBoundary }
+    if (coordinates.isEmpty()) {
+        return null
+    }
+
+    val minLatitude = coordinates.minOf { it.latitude }
+    val maxLatitude = coordinates.maxOf { it.latitude }
+    val minLongitude = coordinates.minOf { it.longitude }
+    val maxLongitude = coordinates.maxOf { it.longitude }
+
+    return LatLngBounds(
+        LatLng.from(maxLatitude, maxLongitude),
+        LatLng.from(minLatitude, minLongitude),
+    )
+}
+
 private fun createCurrentLocationBitmap(context: Context): Bitmap {
     val density = context.resources.displayMetrics.density
     val size = (23 * density).toInt()
@@ -217,6 +244,7 @@ private val DEFAULT_REGION_POSITION = LatLng.from(37.5665, 126.9780)
 private const val DEFAULT_ZOOM_LEVEL = 15
 private const val CURRENT_LOCATION_ZOOM_LEVEL = 16
 private const val REGION_FILTER_ZOOM_LEVEL = 11
+private const val REGION_BOUNDARY_CAMERA_PADDING_DP = 32
 private const val CURRENT_LOCATION_LABEL_ID = "current-location"
 private const val REGION_BOUNDARY_POLYGON_ID = "selected-region-boundary"
 private const val REGION_BOUNDARY_LAYER_ID = "selected-region-boundary-layer"

@@ -15,7 +15,7 @@ fun PrivacyPolicyScreen(
 ) {
     Scaffold(
         topBar = {
-            AppTopBar(title = "개인정보 처리방침", onBackClick = onBackClick)
+            AppTopBar(title1 = "개인정보 처리방침", title2 = "", onBackClick = onBackClick)
         },
         containerColor = Color.White
     ) { paddingValues ->

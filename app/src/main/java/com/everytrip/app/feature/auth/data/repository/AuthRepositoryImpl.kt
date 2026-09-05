@@ -8,6 +8,7 @@ import com.everytrip.app.feature.auth.data.model.EmailCodeResponse
 import com.everytrip.app.feature.auth.data.model.EmailVerifyResponse
 import com.everytrip.app.feature.auth.data.model.SignUpResponse
 import com.everytrip.app.feature.auth.data.remote.AuthApi
+import com.everytrip.app.feature.auth.data.remote.AuthSessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -16,8 +17,18 @@ class AuthRepositoryImpl(
     private val authApi: AuthApi = AuthApi(),
 ) : AuthRepository {
     private val storage = AuthSecureStorage(context)
+    private val sessionManager = AuthSessionManager.get(context)
 
-    override fun getOrCreateDeviceId(): String = storage.getOrCreateDeviceId()
+    override fun initializeDeviceId(): String {
+        if (storage.getDeviceId() == null &&
+            (storage.getAccessToken() != null || storage.getRefreshToken() != null)
+        ) {
+            storage.clearTokens()
+        }
+        return storage.getOrCreateDeviceId()
+    }
+
+    override fun getOrCreateDeviceId(): String = sessionManager.getOrCreateDeviceId()
 
     override fun getStoredAccessToken(): String? = storage.getAccessToken()
 
@@ -64,8 +75,7 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun getMe(): AuthUser = withContext(Dispatchers.IO) {
-        val accessToken = storage.getAccessToken() ?: throw IllegalStateException("No access token.")
-        authApi.getMe(accessToken)
+        sessionManager.getAuthenticatedUser { accessToken -> authApi.getMe(accessToken) }
     }
 
     override suspend fun refresh(): AuthSession = withContext(Dispatchers.IO) {

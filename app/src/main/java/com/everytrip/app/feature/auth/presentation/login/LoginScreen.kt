@@ -81,7 +81,7 @@ fun LoginScreen(
 
     Scaffold(
         topBar = {
-            AppTopBar(title = "Every Trip", onBackClick = onBackClick)
+            AppTopBar(title1 = "Every", title2 = "Trip", onBackClick = onBackClick)
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = Color.White,

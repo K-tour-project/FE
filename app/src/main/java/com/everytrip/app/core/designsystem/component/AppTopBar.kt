@@ -1,10 +1,14 @@
 package com.everytrip.app.core.designsystem.component
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -19,14 +23,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import com.everytrip.app.R
 import com.everytrip.app.ui.theme.NavyText
+import com.everytrip.app.ui.theme.PrimaryBlue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppTopBar(
-    title: String,
+    title1: String,
+    title2: String,
     onBackClick: (() -> Unit)? = null,
     actionIcon: ImageVector? = null,
     actionIconContentDescription: String? = null,
@@ -36,11 +47,41 @@ fun AppTopBar(
     CenterAlignedTopAppBar(
         modifier = Modifier.height(80.dp),
         title = {
-            Text(
-                text = title,
-                color = NavyText,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "Every Trip 로고",
+                    modifier = Modifier.size(40.dp)
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = buildAnnotatedString {
+                        withStyle(
+                            style = SpanStyle(
+                                color = NavyText,
+                                fontWeight = FontWeight.Bold
+                            )
+                        ) {
+                            append(title1)
+                        }
+
+                        append(" ")
+
+                        withStyle(
+                            style = SpanStyle(
+                                color = PrimaryBlue,
+                                fontWeight = FontWeight.Bold
+                            )
+                        ) {
+                            append(title2)
+                        }
+                    }
+                )
+            }
         },
         navigationIcon = {
             if (onBackClick != null) {
