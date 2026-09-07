@@ -1,6 +1,18 @@
 package com.everytrip.app
 
 import android.os.Bundle
+import android.content.MutableContextWrapper
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
+import androidx.lifecycle.lifecycleScope
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
+import kotlinx.coroutines.launch
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -94,7 +106,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 onGoogleLoginClick = {
-                                    loginViewModel.showMessage("구글 SDK 토큰 연결 후 로그인할 수 있습니다.")
+                                    startGoogleLogin()
                                 },
                                 onMessageShown = loginViewModel::clearMessage,
                             )
@@ -138,6 +150,48 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    private fun startGoogleLogin() {
+        if (loginViewModel.uiState.value.isLoading) return
+        val clientId = BuildConfig.GOOGLE_WEB_CLIENT_ID
+        if (clientId.isBlank()) {
+            loginViewModel.showMessage("구글 로그인 설정이 필요합니다.")
+            return
+        }
+        loginViewModel.setGoogleSignInLoading(true)
+        lifecycleScope.launch {
+            val idToken = try {
+                val request = GetCredentialRequest.Builder()
+                    .addCredentialOption(GetSignInWithGoogleOption.Builder(clientId).build())
+                    .build()
+                val credential = CredentialManager.create(this@MainActivity).getCredential(
+                    context = MutableContextWrapper(this@MainActivity),
+                    request = request,
+                ).credential
+                if (credential !is CustomCredential ||
+                    credential.type != GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+                ) {
+                    loginViewModel.showMessage("구글 로그인 응답을 확인할 수 없습니다.")
+                    return@launch
+                }
+                GoogleIdTokenCredential.createFrom(credential.data).idToken
+            } catch (_: GetCredentialCancellationException) {
+                return@launch
+            } catch (_: NoCredentialException) {
+                loginViewModel.showMessage("구글 계정을 확인한 뒤 다시 시도해 주세요.")
+                return@launch
+            } catch (_: GetCredentialException) {
+                loginViewModel.showMessage("구글 로그인에 실패했습니다. 다시 시도해 주세요.")
+                return@launch
+            } catch (_: GoogleIdTokenParsingException) {
+                loginViewModel.showMessage("구글 로그인 토큰을 확인할 수 없습니다.")
+                return@launch
+            } finally {
+                loginViewModel.setGoogleSignInLoading(false)
+            }
+            loginViewModel.googleLogin(idToken)
         }
     }
 

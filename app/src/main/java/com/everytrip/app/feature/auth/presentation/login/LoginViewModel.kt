@@ -85,6 +85,10 @@ class LoginViewModel(
         }
     }
 
+    fun setGoogleSignInLoading(isLoading: Boolean) {
+        _uiState.update { it.copy(isLoading = isLoading, message = if (isLoading) null else it.message) }
+    }
+
     fun kakaoLogin(accessToken: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, message = null) }

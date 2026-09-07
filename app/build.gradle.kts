@@ -17,6 +17,9 @@ val kakaoNativeAppKey =
 val backendBaseUrl =
     localProperties.getProperty("BACKEND_BASE_URL") ?: ""
 
+val googleWebClientId =
+    localProperties.getProperty("GOOGLE_WEB_CLIENT_ID") ?: ""
+
 extensions.configure<ApplicationExtension>("android") {
     namespace = "com.everytrip.app"
     compileSdk {
@@ -45,6 +48,7 @@ extensions.configure<ApplicationExtension>("android") {
         )
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
     }
 
     buildTypes {
@@ -86,6 +90,9 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.kakao.map)
     implementation(libs.kakao.user)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.google.id)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
