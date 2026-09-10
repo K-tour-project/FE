@@ -21,7 +21,6 @@ class LoginViewModel(
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
     init {
-        repository.initializeDeviceId()
         checkExistingSession()
     }
 

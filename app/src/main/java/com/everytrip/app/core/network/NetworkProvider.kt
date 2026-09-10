@@ -59,6 +59,9 @@ internal object NetworkProvider {
         require(trimmed.isNotBlank()) {
             "BACKEND_BASE_URL is not configured."
         }
+        require(BuildConfig.DEBUG || trimmed.startsWith("https://", ignoreCase = true)) {
+            "Release BACKEND_BASE_URL must use HTTPS."
+        }
         return if (trimmed.endsWith('/')) trimmed else "$trimmed/"
     }
 

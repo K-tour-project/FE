@@ -3,7 +3,6 @@ package com.everytrip.app.feature.auth.data.remote
 import android.content.Context
 import com.everytrip.app.feature.auth.data.local.AuthSecureStorage
 import com.everytrip.app.feature.auth.data.model.AuthSession
-import com.everytrip.app.feature.auth.data.model.AuthUser
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -15,16 +14,28 @@ import kotlinx.coroutines.sync.withLock
 /** Runs authenticated requests and coordinates one refresh across the whole app. */
 class AuthSessionManager private constructor(context: Context) {
     private val storage = AuthSecureStorage(context)
-    private val authApi = AuthApi()
+    private val authApi by lazy { AuthApi() }
     private val refreshMutex = Mutex()
     private val refreshScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var refreshInFlight: CompletableDeferred<AuthSession>? = null
 
+    fun initializeDeviceId(): String = storage.initializeDeviceId()
+
     fun getOrCreateDeviceId(): String = storage.getOrCreateDeviceId()
 
+    fun getStoredAccessToken(): String? = storage.getTokenPair()?.accessToken
+
+    fun getStoredRefreshToken(): String? = storage.getTokenPair()?.refreshToken
+
+    fun saveTokens(accessToken: String, refreshToken: String) {
+        storage.saveTokens(accessToken, refreshToken)
+    }
+
+    fun clearTokens() = storage.clearTokens()
+
     suspend fun <T> executeAuthenticated(request: suspend (String) -> T): T {
-        val accessToken = storage.getAccessToken()
-            ?: throw IllegalStateException("No access token.")
+        val accessToken = storage.getTokenPair()?.accessToken
+            ?: throw SessionExpiredException()
 
         return try {
             request(accessToken)
@@ -33,11 +44,12 @@ class AuthSessionManager private constructor(context: Context) {
                 throw error
             }
 
-            val refreshedAccessToken = refreshAfterUnauthorized(accessToken).accessToken
+            val refreshedAccessToken = refreshAfterUnauthorized(accessToken)
             try {
                 request(refreshedAccessToken)
             } catch (retryError: AuthHttpException) {
                 if (retryError.statusCode == 401) {
+                    storage.clearTokens()
                     throw SessionExpiredException(retryError)
                 }
                 throw retryError
@@ -45,26 +57,11 @@ class AuthSessionManager private constructor(context: Context) {
         }
     }
 
-    suspend fun getAuthenticatedUser(request: suspend (String) -> AuthUser): AuthUser {
-        val accessToken = storage.getAccessToken()
-            ?: throw IllegalStateException("No access token.")
-
-        return try {
-            request(accessToken)
-        } catch (error: AuthHttpException) {
-            if (error.statusCode != 401) {
-                throw error
-            }
-            val refreshResult = refreshAfterUnauthorized(accessToken)
-            refreshResult.user ?: request(refreshResult.accessToken)
-        }
-    }
-
-    private suspend fun refreshAfterUnauthorized(failedAccessToken: String): RefreshResult {
+    private suspend fun refreshAfterUnauthorized(failedAccessToken: String): String {
         val deferred = refreshMutex.withLock {
-            storage.getAccessToken()
+            storage.getTokenPair()?.accessToken
                 ?.takeIf { it != failedAccessToken }
-                ?.let { return RefreshResult(accessToken = it) }
+                ?.let { return it }
 
             refreshInFlight ?: CompletableDeferred<AuthSession>().also { created ->
                 refreshInFlight = created
@@ -85,18 +82,17 @@ class AuthSessionManager private constructor(context: Context) {
             }
         }
 
-        val session = deferred.await()
-        return RefreshResult(
-            accessToken = session.accessToken,
-            user = session.user,
-        )
+        return deferred.await().accessToken
     }
 
     private suspend fun refreshOnce(): AuthSession {
-        val refreshToken = storage.getRefreshToken()
+        val refreshToken = storage.getTokenPair()?.refreshToken
             ?: throw SessionExpiredException()
         val deviceId = storage.getDeviceId()
-            ?: throw SessionExpiredException()
+            ?: run {
+                storage.clearTokens()
+                throw SessionExpiredException()
+            }
 
         return try {
             authApi.refresh(refreshToken, deviceId).also { session ->
@@ -110,11 +106,6 @@ class AuthSessionManager private constructor(context: Context) {
             throw error
         }
     }
-
-    private data class RefreshResult(
-        val accessToken: String,
-        val user: AuthUser? = null,
-    )
 
     companion object {
         @Volatile

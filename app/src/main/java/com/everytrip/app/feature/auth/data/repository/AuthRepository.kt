@@ -7,7 +7,6 @@ import com.everytrip.app.feature.auth.data.model.EmailVerifyResponse
 import com.everytrip.app.feature.auth.data.model.SignUpResponse
 
 interface AuthRepository {
-    fun initializeDeviceId(): String
     fun getOrCreateDeviceId(): String
     fun getStoredAccessToken(): String?
     fun getStoredRefreshToken(): String?
@@ -18,7 +17,6 @@ interface AuthRepository {
     suspend fun googleLogin(idToken: String): AuthSession
     suspend fun kakaoLogin(accessToken: String): AuthSession
     suspend fun getMe(): AuthUser
-    suspend fun refresh(): AuthSession
     suspend fun logout()
     suspend fun logoutAll()
     fun clearTokens()

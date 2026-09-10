@@ -12,14 +12,39 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
+/** Encrypts preference values with an AES-GCM key stored in Android Keystore. */
 class AuthSecureStorage(context: Context) {
     private val appContext = context.applicationContext
     private val preferences: SharedPreferences by lazy {
         appContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
     }
 
+    fun initializeDeviceId(): String {
+        val storedDeviceId = getEncrypted(KEY_DEVICE_ID)
+        val accessToken = getAccessToken()
+        val refreshToken = getRefreshToken()
+        val hasValidDeviceId = AuthStateValidator.isValidDeviceId(storedDeviceId)
+        val hasConsistentTokens = AuthStateValidator.hasConsistentTokenPair(
+            accessToken,
+            refreshToken,
+        )
+
+        if (!hasValidDeviceId || !hasConsistentTokens) {
+            preferences.edit {
+                if (!hasValidDeviceId) {
+                    remove(KEY_DEVICE_ID)
+                }
+                remove(KEY_ACCESS_TOKEN)
+                remove(KEY_REFRESH_TOKEN)
+            }
+        }
+
+        return getOrCreateDeviceId()
+    }
+
     fun getOrCreateDeviceId(): String {
         getDeviceId()?.let { return it }
+        clearDeviceIdAndTokens()
         return "android_${java.util.UUID.randomUUID()}".also { deviceId ->
             preferences.edit {
                 putEncrypted(KEY_DEVICE_ID, deviceId)
@@ -28,12 +53,33 @@ class AuthSecureStorage(context: Context) {
     }
 
     fun getDeviceId(): String? = getEncrypted(KEY_DEVICE_ID)
+        ?.takeIf(AuthStateValidator::isValidDeviceId)
 
-    fun getAccessToken(): String? = getEncrypted(KEY_ACCESS_TOKEN)
+    internal fun getTokenPair(): StoredAuthTokens? {
+        val accessToken = getAccessToken()
+        val refreshToken = getRefreshToken()
 
-    fun getRefreshToken(): String? = getEncrypted(KEY_REFRESH_TOKEN)
+        if (accessToken == null && refreshToken == null) return null
+        if (!AuthStateValidator.hasConsistentTokenPair(accessToken, refreshToken)) {
+            clearTokens()
+            return null
+        }
+
+        return StoredAuthTokens(
+            accessToken = requireNotNull(accessToken),
+            refreshToken = requireNotNull(refreshToken),
+        )
+    }
+
+    private fun getAccessToken(): String? = getEncrypted(KEY_ACCESS_TOKEN)
+        ?.takeIf(String::isNotBlank)
+
+    private fun getRefreshToken(): String? = getEncrypted(KEY_REFRESH_TOKEN)
+        ?.takeIf(String::isNotBlank)
 
     fun saveTokens(accessToken: String, refreshToken: String) {
+        require(accessToken.isNotBlank()) { "Access token must not be blank." }
+        require(refreshToken.isNotBlank()) { "Refresh token must not be blank." }
         preferences.edit {
             putEncrypted(KEY_ACCESS_TOKEN, accessToken)
             putEncrypted(KEY_REFRESH_TOKEN, refreshToken)
@@ -44,6 +90,14 @@ class AuthSecureStorage(context: Context) {
         preferences.edit {
             remove(KEY_ACCESS_TOKEN)
                 .remove(KEY_REFRESH_TOKEN)
+        }
+    }
+
+    private fun clearDeviceIdAndTokens() {
+        preferences.edit {
+            remove(KEY_DEVICE_ID)
+            remove(KEY_ACCESS_TOKEN)
+            remove(KEY_REFRESH_TOKEN)
         }
     }
 
@@ -120,3 +174,8 @@ class AuthSecureStorage(context: Context) {
         val keyLock = Any()
     }
 }
+
+internal data class StoredAuthTokens(
+    val accessToken: String,
+    val refreshToken: String,
+)
