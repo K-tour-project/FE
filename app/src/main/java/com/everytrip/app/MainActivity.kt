@@ -34,8 +34,6 @@ import com.everytrip.app.feature.auth.presentation.login.LoginViewModel
 import com.everytrip.app.feature.auth.presentation.signup.SignUpScreen
 import com.everytrip.app.feature.auth.presentation.signup.SignUpViewModel
 import com.everytrip.app.feature.home.presentation.HomeScreen
-import com.everytrip.app.feature.region.presentation.detail.RegionDetailScreen
-import com.everytrip.app.feature.region.presentation.search.FilteredPlace
 import com.everytrip.app.feature.region.presentation.search.RegionSearchScreen
 import com.everytrip.app.feature.region.presentation.search.RegionSearchViewModel
 import com.everytrip.app.ui.theme.PrimaryBlue
@@ -60,8 +58,6 @@ class MainActivity : ComponentActivity() {
                 var authDestination by remember { mutableStateOf(AuthDestination.Login) }
                 var mainDestination by remember { mutableStateOf(MainDestination.Home) }
                 var isGuestMode by remember { mutableStateOf(false) }
-                var selectedPlace by remember { mutableStateOf<FilteredPlace?>(null) }
-                val place = selectedPlace
 
                 LaunchedEffect(signUpUiState.signupCompleted) {
                     if (signUpUiState.signupCompleted) {
@@ -90,7 +86,6 @@ class MainActivity : ComponentActivity() {
                                 onGuestLoginClick = {
                                     isGuestMode = true
                                     mainDestination = MainDestination.Home
-                                    selectedPlace = null
                                 },
                                 onKakaoLoginClick = {
                                     UserApiClient.instance.loginWithKakao(this@MainActivity) { token, error ->
@@ -125,29 +120,20 @@ class MainActivity : ComponentActivity() {
                     mainDestination == MainDestination.Home -> {
                         HomeScreen(
                             onNavigateToRegionSearch = {
-                                selectedPlace = null
                                 mainDestination = MainDestination.RegionSearch
                             },
                         )
                     }
 
-                    place == null -> {
+                    else -> {
                         RegionSearchScreen(
                             viewModel = regionSearchViewModel,
-                            onRegionPlaceClick = { selectedPlace = it },
                             onTitleClick = {
-                                selectedPlace = null
                                 mainDestination = MainDestination.Home
                             },
                         )
                     }
 
-                    else -> {
-                        RegionDetailScreen(
-                            place = place,
-                            onBackClick = { selectedPlace = null },
-                        )
-                    }
                 }
             }
         }

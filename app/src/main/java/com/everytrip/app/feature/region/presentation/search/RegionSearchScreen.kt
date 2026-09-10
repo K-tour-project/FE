@@ -9,8 +9,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.NotificationsNone
+import androidx.compose.material3.Text
+import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetScaffoldState
+import androidx.compose.material3.rememberStandardBottomSheetState
+import com.everytrip.app.feature.region.presentation.detail.RegionDetailScreen
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -18,18 +26,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.everytrip.app.core.designsystem.component.MainTopBar
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegionSearchScreen(
     modifier: Modifier = Modifier,
     viewModel: RegionSearchViewModel,
-    onRegionPlaceClick: (FilteredPlace) -> Unit,
     onTitleClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val bottomSheetState = rememberStandardBottomSheetState(
+        initialValue = SheetValue.PartiallyExpanded,
+        skipHiddenState = true,
+    )
+    val bottomSheetScaffoldState = rememberBottomSheetScaffoldState(bottomSheetState)
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
     ) { permissions ->
@@ -48,6 +62,12 @@ fun RegionSearchScreen(
                     Manifest.permission.ACCESS_COARSE_LOCATION,
                 ),
             )
+        }
+    }
+
+    LaunchedEffect(uiState.selectedRegionId) {
+        if (uiState.selectedRegionId != null) {
+            bottomSheetState.partialExpand()
         }
     }
 
@@ -85,12 +105,48 @@ fun RegionSearchScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        RegionKakaoMap(
-            uiState = uiState,
-            onMapError = {},
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
+        if (uiState.selectedRegionId != null) {
+            BottomSheetScaffold(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                scaffoldState = bottomSheetScaffoldState,
+                sheetPeekHeight = 320.dp,
+                sheetContent = {
+                    RegionBottomSheet(
+                        state = uiState,
+                        isExpanded = bottomSheetState.currentValue == SheetValue.Expanded,
+                        onPlaceClick = viewModel::selectPlace,
+                        onLoadMore = viewModel::loadMorePlaces,
+                    )
+                },
+            ) { innerPadding ->
+                RegionKakaoMap(
+                    uiState = uiState,
+                    onMapError = {},
+                    onPlaceClick = viewModel::selectPlace,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                )
+            }
+        } else {
+            RegionKakaoMap(
+                uiState = uiState,
+                onMapError = {},
+                onPlaceClick = viewModel::selectPlace,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            )
+        }
+        uiState.regionErrorMessage?.let { Text("지역 정보를 불러오지 못했어요. 지역을 다시 선택해 주세요.") }
+    }
+    if (uiState.selectedContentId != null) {
+        RegionDetailScreen(
+            state = uiState,
+            onClose = viewModel::closePlaceDetail,
+            onRetry = { uiState.selectedContentId?.let(viewModel::selectPlace) },
         )
     }
 }

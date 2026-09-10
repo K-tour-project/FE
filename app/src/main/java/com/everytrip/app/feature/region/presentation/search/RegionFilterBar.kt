@@ -64,10 +64,11 @@ fun RegionFilterBar(
     ) {
         Text(
             text = "지역 필터",
+            modifier = Modifier.padding(start = 8.dp),
             color = NavyText,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            lineHeight = 32.sp,
+            lineHeight = 24.sp,
         )
 
         Row(
@@ -120,9 +121,10 @@ private fun RegionFilterDropdown(
     Column(modifier = modifier) {
         Text(
             text = label,
+            modifier = Modifier.padding(start = 8.dp),
             color = SecondaryText,
             fontSize = 16.sp,
-            lineHeight = 28.sp,
+            lineHeight = 22.sp,
         )
 
         Box(

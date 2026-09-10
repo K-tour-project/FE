@@ -5,16 +5,31 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.createBitmap
@@ -23,6 +38,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.everytrip.app.feature.region.data.model.RegionLocation
 import com.everytrip.app.feature.region.data.model.RegionPolygon
+import com.everytrip.app.feature.region.data.model.TourismPlace
 import com.kakao.vectormap.KakaoMap
 import com.kakao.vectormap.KakaoMapReadyCallback
 import com.kakao.vectormap.LatLng
@@ -40,25 +56,40 @@ import com.kakao.vectormap.shape.PolygonOptions
 import com.kakao.vectormap.shape.PolygonStyles
 import com.kakao.vectormap.shape.ShapeLayerOptions
 import com.kakao.vectormap.shape.ShapeLayerPass
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegionKakaoMap(
     uiState: RegionSearchUiState,
     onMapError: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onPlaceClick: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
-    val cameraPadding = with(LocalDensity.current) { REGION_BOUNDARY_CAMERA_PADDING_DP.dp.roundToPx() }
+    val cameraPadding = with(LocalDensity.current) {
+        REGION_BOUNDARY_CAMERA_PADDING_DP.dp.roundToPx()
+    }
     val lifecycleOwner = LocalLifecycleOwner.current
     val currentLocationBitmap = remember { createCurrentLocationBitmap(context) }
     val mapView = remember(context) { MapView(context) }
     var kakaoMap by remember { mutableStateOf<KakaoMap?>(null) }
     var currentLocationLabel by remember { mutableStateOf<Label?>(null) }
+    val placeLabels = remember { mutableMapOf<String, Label>() }
+    val markerBitmaps = remember { mutableStateMapOf<String, Bitmap>() }
+    val appliedMarkerBitmaps = remember { mutableMapOf<String, Bitmap>() }
+    val currentOnPlaceClick by rememberUpdatedState(onPlaceClick)
 
-    AndroidView(
-        modifier = modifier,
-        factory = { mapView },
-    )
+    Box(modifier = modifier) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { mapView },
+        )
+        TourismMarkerBitmapRenderers(
+            places = uiState.places.filter { it.location != null },
+            onBitmapReady = { contentId, bitmap -> markerBitmaps[contentId] = bitmap },
+        )
+    }
 
     DisposableEffect(mapView) {
         mapView.start(
@@ -77,6 +108,11 @@ fun RegionKakaoMap(
                 override fun getZoomLevel(): Int = DEFAULT_ZOOM_LEVEL
 
                 override fun onMapReady(map: KakaoMap) {
+                    map.setOnLabelClickListener { _, _, label ->
+                        val contentId = label.tag as? String
+                        if (contentId != null) currentOnPlaceClick(contentId)
+                        contentId != null
+                    }
                     kakaoMap = map
                 }
             },
@@ -87,6 +123,38 @@ fun RegionKakaoMap(
             mapView.finish()
             kakaoMap = null
             currentLocationLabel = null
+            placeLabels.clear()
+            markerBitmaps.clear()
+            appliedMarkerBitmaps.clear()
+        }
+    }
+
+    LaunchedEffect(kakaoMap, uiState.places, markerBitmaps.toMap()) {
+        val layer = kakaoMap?.labelManager?.layer ?: return@LaunchedEffect
+        val placesWithLocation = uiState.places.filter { it.location != null }
+        val ids = placesWithLocation.map { it.contentId }.toSet()
+        (placeLabels.keys - ids).forEach { id ->
+            placeLabels.remove(id)?.let(layer::remove)
+            appliedMarkerBitmaps.remove(id)
+        }
+        (markerBitmaps.keys - ids).forEach(markerBitmaps::remove)
+
+        placesWithLocation.forEach { place ->
+            val bitmap = markerBitmaps[place.contentId] ?: return@forEach
+            if (appliedMarkerBitmaps[place.contentId] !== bitmap) {
+                placeLabels.remove(place.contentId)?.let(layer::remove)
+                placeLabels[place.contentId] = layer.addLabel(
+                    LabelOptions.from("tourism-${place.contentId}", place.location!!.toLatLng())
+                        .setStyles(
+                            LabelStyles.from(
+                                LabelStyle.from(bitmap).setAnchorPoint(0.5f, MARKER_ANCHOR_Y),
+                            ),
+                        )
+                        .setClickable(true)
+                        .setTag(place.contentId),
+                )
+                appliedMarkerBitmaps[place.contentId] = bitmap
+            }
         }
     }
 
@@ -183,7 +251,9 @@ fun RegionKakaoMap(
                 ),
         )
 
-        map.moveCamera(CameraUpdateFactory.newCenterPosition(position, CURRENT_LOCATION_ZOOM_LEVEL))
+        if (uiState.selectedRegionId == null) {
+            map.moveCamera(CameraUpdateFactory.newCenterPosition(position, CURRENT_LOCATION_ZOOM_LEVEL))
+        }
     }
 }
 
@@ -239,12 +309,93 @@ private fun createCurrentLocationBitmap(context: Context): Bitmap {
     return bitmap
 }
 
+@Composable
+private fun TourismMarkerBitmapRenderers(
+    places: List<TourismPlace>,
+    onBitmapReady: (contentId: String, bitmap: Bitmap) -> Unit,
+) {
+    places.forEach { place ->
+        key(place.contentId, place.name, place.thumbnailUrl, place.category) {
+            val loadedThumbnail by produceState<LoadedMarkerThumbnail?>(
+                initialValue = null,
+                key1 = place.thumbnailUrl,
+            ) {
+                value = LoadedMarkerThumbnail(loadTourismBitmap(place.thumbnailUrl))
+            }
+            loadedThumbnail?.let { result ->
+                RegionPlaceMarkerBitmapRenderer(
+                    place = place,
+                    thumbnail = result.bitmap,
+                    onBitmapReady = { bitmap -> onBitmapReady(place.contentId, bitmap) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RegionPlaceMarkerBitmapRenderer(
+    place: TourismPlace,
+    thumbnail: Bitmap?,
+    onBitmapReady: (Bitmap) -> Unit,
+) {
+    val currentDensity = LocalDensity.current
+    val graphicsLayer = rememberGraphicsLayer()
+    val coroutineScope = rememberCoroutineScope()
+    val currentOnBitmapReady by rememberUpdatedState(onBitmapReady)
+    val captureStarted = remember(place, thumbnail) { AtomicBoolean(false) }
+    val markerPlace = remember(place, thumbnail) {
+        place.toMarkerUiModel().let { marker ->
+            if (thumbnail == null) marker.copy(thumbnailUrl = null) else marker
+        }
+    }
+
+    CompositionLocalProvider(
+        LocalDensity provides Density(
+            density = currentDensity.density / MARKER_SCALE_FACTOR,
+            fontScale = currentDensity.fontScale,
+        ),
+    ) {
+        RegionPlaceMarker(
+            place = markerPlace,
+            thumbnailBitmap = thumbnail?.asImageBitmap(),
+            modifier = Modifier
+                .clearAndSetSemantics { }
+                .drawWithContent {
+                    graphicsLayer.record {
+                        this@drawWithContent.drawContent()
+                    }
+                    if (captureStarted.compareAndSet(false, true)) {
+                        coroutineScope.launch {
+                            val capturedBitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
+                            val markerBitmap = capturedBitmap.copy(Bitmap.Config.ARGB_8888, false)
+                                ?: capturedBitmap
+                            currentOnBitmapReady(markerBitmap)
+                        }
+                    }
+                }
+                .padding(
+                    start = MARKER_CAPTURE_HORIZONTAL_PADDING_DP.dp,
+                    top = MARKER_CAPTURE_VERTICAL_PADDING_DP.dp,
+                    end = MARKER_CAPTURE_HORIZONTAL_PADDING_DP.dp,
+                    bottom = MARKER_CAPTURE_VERTICAL_PADDING_DP.dp,
+                ),
+        )
+    }
+}
+
+private data class LoadedMarkerThumbnail(val bitmap: Bitmap?)
+
 private val DEFAULT_REGION_POSITION = LatLng.from(37.5665, 126.9780)
 
 private const val DEFAULT_ZOOM_LEVEL = 15
 private const val CURRENT_LOCATION_ZOOM_LEVEL = 16
-private const val REGION_FILTER_ZOOM_LEVEL = 11
-private const val REGION_BOUNDARY_CAMERA_PADDING_DP = 32
+private const val REGION_FILTER_ZOOM_LEVEL = 13
+private const val REGION_BOUNDARY_CAMERA_PADDING_DP = 6
+private const val MARKER_SCALE_FACTOR = 2f
+private const val MARKER_CAPTURE_HORIZONTAL_PADDING_DP = 12
+private const val MARKER_CAPTURE_VERTICAL_PADDING_DP = 8
+private const val MARKER_ANCHOR_Y = 136f / 144f
 private const val CURRENT_LOCATION_LABEL_ID = "current-location"
 private const val REGION_BOUNDARY_POLYGON_ID = "selected-region-boundary"
 private const val REGION_BOUNDARY_LAYER_ID = "selected-region-boundary-layer"

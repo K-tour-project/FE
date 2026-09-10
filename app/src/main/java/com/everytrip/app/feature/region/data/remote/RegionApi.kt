@@ -6,6 +6,9 @@ import com.everytrip.app.feature.region.data.model.RegionLocation
 import com.everytrip.app.feature.region.data.model.RegionOption
 import com.everytrip.app.feature.region.data.model.RegionPolygon
 import com.everytrip.app.feature.region.data.model.Sido
+import com.everytrip.app.feature.region.data.model.TourismPlace
+import com.everytrip.app.feature.region.data.model.TourismPage
+import com.everytrip.app.feature.region.data.model.TourismDetail
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
@@ -37,6 +40,46 @@ class RegionApi(
         val json = get(path = "/regions/$regionId/boundary")
         return parseBoundary(json)
     }
+
+    fun getTourismPlaces(regionId: Int, page: Int, size: Int): TourismPage {
+        val root = JSONObject(get("/regions/$regionId/tourism-places",
+            mapOf("page" to page.toString(), "size" to size.toString())))
+        return TourismPage(
+            items = root.getJSONArray("items").mapObjects { value ->
+                val item = value as JSONObject
+                TourismPlace(
+                    contentId = item.getString("content_id"),
+                    name = item.getString("name"),
+                    thumbnailUrl = item.nullableString("thumbnail_url"),
+                    location = item.optJSONObject("location")?.toRegionLocation(),
+                    sidoName = item.nullableString("sido_name"),
+                    sigunguName = item.nullableString("sigungu_name"),
+                    category = item.optString("category", "관광지"),
+                )
+            },
+            total = root.getInt("total"),
+            page = root.getInt("page"),
+            hasNext = root.getBoolean("has_next"),
+        )
+    }
+
+    fun getTourismDetail(contentId: String): TourismDetail {
+        require(contentId.isNotBlank())
+        val root = JSONObject(get("/tourism-places/${contentId.urlEncode()}"))
+        return TourismDetail(
+            contentId = root.getString("content_id"),
+            name = root.getString("name"),
+            overview = root.nullableString("overview"),
+            homepage = root.nullableString("homepage"),
+            tel = root.nullableString("tel"),
+            address = root.nullableString("address"),
+            addressDetail = root.nullableString("address_detail"),
+            images = root.optJSONArray("images")?.mapObjects { it as String }.orEmpty(),
+        )
+    }
+
+    private fun JSONObject.nullableString(key: String): String? =
+        if (isNull(key)) null else optString(key).takeIf { it.isNotBlank() }
 
     private fun get(path: String, query: Map<String, String> = emptyMap()): String {
         val normalizedBaseUrl = baseUrl.trimEnd('/')
