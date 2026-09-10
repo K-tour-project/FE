@@ -9,8 +9,6 @@ import com.everytrip.app.feature.auth.data.model.EmailVerifyResponse
 import com.everytrip.app.feature.auth.data.model.SignUpResponse
 import com.everytrip.app.feature.auth.data.remote.AuthApi
 import com.everytrip.app.feature.auth.data.remote.AuthSessionManager
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 class AuthRepositoryImpl(
     context: Context,
@@ -34,61 +32,57 @@ class AuthRepositoryImpl(
 
     override fun getStoredRefreshToken(): String? = storage.getRefreshToken()
 
-    override suspend fun sendEmailCode(email: String): EmailCodeResponse = withContext(Dispatchers.IO) {
-        authApi.sendEmailCode(email)
-    }
+    override suspend fun sendEmailCode(email: String): EmailCodeResponse = authApi.sendEmailCode(email)
 
-    override suspend fun verifyEmailCode(email: String, code: String): EmailVerifyResponse = withContext(Dispatchers.IO) {
+    override suspend fun verifyEmailCode(email: String, code: String): EmailVerifyResponse =
         authApi.verifyEmailCode(email, code)
-    }
 
-    override suspend fun signUp(email: String, password: String, nickname: String): SignUpResponse = withContext(Dispatchers.IO) {
+    override suspend fun signUp(email: String, password: String, nickname: String): SignUpResponse =
         authApi.signUp(email, password, nickname)
-    }
 
-    override suspend fun login(email: String, password: String): AuthSession = withContext(Dispatchers.IO) {
+    override suspend fun login(email: String, password: String): AuthSession {
         val session = authApi.login(
             email = email,
             password = password,
             deviceId = storage.getOrCreateDeviceId(),
         )
         storage.saveTokens(session.accessToken, session.refreshToken)
-        session
+        return session
     }
 
-    override suspend fun googleLogin(idToken: String): AuthSession = withContext(Dispatchers.IO) {
+    override suspend fun googleLogin(idToken: String): AuthSession {
         val session = authApi.googleLogin(
             idToken = idToken,
             deviceId = storage.getOrCreateDeviceId(),
         )
         storage.saveTokens(session.accessToken, session.refreshToken)
-        session
+        return session
     }
 
-    override suspend fun kakaoLogin(accessToken: String): AuthSession = withContext(Dispatchers.IO) {
+    override suspend fun kakaoLogin(accessToken: String): AuthSession {
         val session = authApi.kakaoLogin(
             accessToken = accessToken,
             deviceId = storage.getOrCreateDeviceId(),
         )
         storage.saveTokens(session.accessToken, session.refreshToken)
-        session
+        return session
     }
 
-    override suspend fun getMe(): AuthUser = withContext(Dispatchers.IO) {
-        sessionManager.getAuthenticatedUser { accessToken -> authApi.getMe(accessToken) }
+    override suspend fun getMe(): AuthUser {
+        return sessionManager.getAuthenticatedUser { accessToken -> authApi.getMe(accessToken) }
     }
 
-    override suspend fun refresh(): AuthSession = withContext(Dispatchers.IO) {
+    override suspend fun refresh(): AuthSession {
         val refreshToken = storage.getRefreshToken() ?: throw IllegalStateException("No refresh token.")
         val session = authApi.refresh(
             refreshToken = refreshToken,
             deviceId = storage.getOrCreateDeviceId(),
         )
         storage.saveTokens(session.accessToken, session.refreshToken)
-        session
+        return session
     }
 
-    override suspend fun logout() = withContext(Dispatchers.IO) {
+    override suspend fun logout() {
         val refreshToken = storage.getRefreshToken()
         runCatching {
             if (refreshToken != null) {
@@ -98,7 +92,7 @@ class AuthRepositoryImpl(
         storage.clearTokens()
     }
 
-    override suspend fun logoutAll() = withContext(Dispatchers.IO) {
+    override suspend fun logoutAll() {
         val accessToken = storage.getAccessToken()
         runCatching {
             if (accessToken != null) {

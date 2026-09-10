@@ -22,19 +22,7 @@ class AuthSessionManager private constructor(context: Context) {
 
     fun getOrCreateDeviceId(): String = storage.getOrCreateDeviceId()
 
-    fun getDeviceId(): String? = storage.getDeviceId()
-
-    fun getAccessToken(): String? = storage.getAccessToken()
-
-    fun getRefreshToken(): String? = storage.getRefreshToken()
-
-    fun clearTokens() = storage.clearTokens()
-
-    fun saveTokens(accessToken: String, refreshToken: String) {
-        storage.saveTokens(accessToken, refreshToken)
-    }
-
-    suspend fun <T> executeAuthenticated(request: (String) -> T): T {
+    suspend fun <T> executeAuthenticated(request: suspend (String) -> T): T {
         val accessToken = storage.getAccessToken()
             ?: throw IllegalStateException("No access token.")
 
@@ -57,7 +45,7 @@ class AuthSessionManager private constructor(context: Context) {
         }
     }
 
-    suspend fun getAuthenticatedUser(request: (String) -> AuthUser): AuthUser {
+    suspend fun getAuthenticatedUser(request: suspend (String) -> AuthUser): AuthUser {
         val accessToken = storage.getAccessToken()
             ?: throw IllegalStateException("No access token.")
 
@@ -104,7 +92,7 @@ class AuthSessionManager private constructor(context: Context) {
         )
     }
 
-    private fun refreshOnce(): AuthSession {
+    private suspend fun refreshOnce(): AuthSession {
         val refreshToken = storage.getRefreshToken()
             ?: throw SessionExpiredException()
         val deviceId = storage.getDeviceId()

@@ -15,11 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import java.net.HttpURLConnection
-import java.net.URL
+import com.everytrip.app.core.network.NetworkProvider
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.Request
 
 private val tourismImageCache = object : LruCache<String, Bitmap>(16 * 1024 * 1024) {
     override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
@@ -31,14 +31,13 @@ internal suspend fun loadTourismBitmap(url: String?): Bitmap? {
 
     return withContext(Dispatchers.IO) {
         try {
-            val imageUrl = URL(url)
-            if (imageUrl.protocol !in listOf("http", "https")) return@withContext null
-            val connection = (imageUrl.openConnection() as HttpURLConnection).apply {
-                connectTimeout = 10_000
-                readTimeout = 10_000
-            }
-            try {
-                val bytes = connection.inputStream.use { it.readBytes() }
+            val request = Request.Builder()
+                .url(url)
+                .header("Accept", "image/*")
+                .build()
+            NetworkProvider.okHttpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return@withContext null
+                val bytes = response.body.bytes()
                 val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
                 val options = BitmapFactory.Options().apply {
@@ -50,8 +49,6 @@ internal suspend fun loadTourismBitmap(url: String?): Bitmap? {
                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)?.also {
                     tourismImageCache.put(url, it)
                 }
-            } finally {
-                connection.disconnect()
             }
         } catch (cancelled: CancellationException) {
             throw cancelled
