@@ -26,28 +26,47 @@ class LoginViewModel(
 
     fun checkExistingSession() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isCheckingSession = true, message = null) }
+            _uiState.update {
+                it.copy(sessionCheckState = SessionCheckState.Checking, message = null)
+            }
 
             if (repository.getStoredAccessToken() == null) {
-                _uiState.update { it.copy(isCheckingSession = false, user = null) }
+                _uiState.update {
+                    it.copy(
+                        sessionCheckState = SessionCheckState.Unauthenticated,
+                        user = null,
+                    )
+                }
                 return@launch
             }
 
             runCatching { repository.getMe() }
                 .onSuccess { user ->
                     _uiState.update {
-                        it.copy(isCheckingSession = false, user = user, message = null)
+                        it.copy(
+                            sessionCheckState = SessionCheckState.Authenticated,
+                            user = user,
+                            message = null,
+                        )
                     }
                 }
                 .onFailure { error ->
                     if (error is SessionExpiredException) {
                         repository.clearTokens()
                         _uiState.update {
-                            it.copy(isCheckingSession = false, user = null, message = null)
+                            it.copy(
+                                sessionCheckState = SessionCheckState.Unauthenticated,
+                                user = null,
+                                message = null,
+                            )
                         }
                     } else {
                         _uiState.update {
-                            it.copy(isCheckingSession = false, user = null, message = error.toUserMessage())
+                            it.copy(
+                                sessionCheckState = SessionCheckState.RetryableError,
+                                user = null,
+                                message = null,
+                            )
                         }
                     }
                 }
@@ -60,12 +79,22 @@ class LoginViewModel(
             runCatching { repository.login(email.trim(), password) }
                 .onSuccess { session ->
                     _uiState.update {
-                        it.copy(isLoading = false, user = session.user, message = null)
+                        it.copy(
+                            sessionCheckState = SessionCheckState.Authenticated,
+                            isLoading = false,
+                            user = session.user,
+                            message = null,
+                        )
                     }
                 }
                 .onFailure { error ->
                     _uiState.update {
-                        it.copy(isLoading = false, user = null, message = error.toLoginMessage())
+                        it.copy(
+                            sessionCheckState = SessionCheckState.Unauthenticated,
+                            isLoading = false,
+                            user = null,
+                            message = error.toLoginMessage(),
+                        )
                     }
                 }
         }
@@ -76,7 +105,14 @@ class LoginViewModel(
             _uiState.update { it.copy(isLoading = true, message = null) }
             runCatching { repository.googleLogin(idToken) }
                 .onSuccess { session ->
-                    _uiState.update { it.copy(isLoading = false, user = session.user, message = null) }
+                    _uiState.update {
+                        it.copy(
+                            sessionCheckState = SessionCheckState.Authenticated,
+                            isLoading = false,
+                            user = session.user,
+                            message = null,
+                        )
+                    }
                 }
                 .onFailure { error ->
                     _uiState.update { it.copy(isLoading = false, message = error.toSocialMessage("구글")) }
@@ -93,7 +129,14 @@ class LoginViewModel(
             _uiState.update { it.copy(isLoading = true, message = null) }
             runCatching { repository.kakaoLogin(accessToken) }
                 .onSuccess { session ->
-                    _uiState.update { it.copy(isLoading = false, user = session.user, message = null) }
+                    _uiState.update {
+                        it.copy(
+                            sessionCheckState = SessionCheckState.Authenticated,
+                            isLoading = false,
+                            user = session.user,
+                            message = null,
+                        )
+                    }
                 }
                 .onFailure { error ->
                     _uiState.update { it.copy(isLoading = false, message = error.toSocialMessage("카카오")) }
@@ -108,7 +151,9 @@ class LoginViewModel(
     fun logout() {
         viewModelScope.launch {
             repository.logout()
-            _uiState.update { LoginUiState(isCheckingSession = false) }
+            _uiState.update {
+                LoginUiState(sessionCheckState = SessionCheckState.Unauthenticated)
+            }
         }
     }
 
@@ -141,10 +186,4 @@ class LoginViewModel(
         }
     }
 
-    private fun Throwable.toUserMessage(): String {
-        return when (this) {
-            is AuthHttpException -> detail
-            else -> message ?: "요청을 처리하지 못했습니다."
-        }
-    }
 }

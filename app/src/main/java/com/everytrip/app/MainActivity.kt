@@ -29,8 +29,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.everytrip.app.core.designsystem.component.NetworkErrorDialog
 import com.everytrip.app.feature.auth.presentation.login.LoginScreen
 import com.everytrip.app.feature.auth.presentation.login.LoginViewModel
+import com.everytrip.app.feature.auth.presentation.login.SessionCheckState
 import com.everytrip.app.feature.auth.presentation.signup.SignUpScreen
 import com.everytrip.app.feature.auth.presentation.signup.SignUpViewModel
 import com.everytrip.app.feature.home.presentation.HomeScreen
@@ -67,7 +69,7 @@ class MainActivity : ComponentActivity() {
                 }
 
                 when {
-                    loginUiState.isCheckingSession -> {
+                    loginUiState.sessionCheckState == SessionCheckState.Checking -> {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center,
@@ -76,7 +78,21 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    loginUiState.user == null && !isGuestMode -> {
+                    loginUiState.sessionCheckState == SessionCheckState.RetryableError -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator(color = PrimaryBlue)
+                            NetworkErrorDialog(
+                                onExitClick = this@MainActivity::finishAndRemoveTask,
+                                onRetryClick = loginViewModel::checkExistingSession,
+                            )
+                        }
+                    }
+
+                    loginUiState.sessionCheckState == SessionCheckState.Unauthenticated &&
+                        !isGuestMode -> {
                         when (authDestination) {
                             AuthDestination.Login -> LoginScreen(
                                 uiState = loginUiState,

@@ -59,7 +59,9 @@ import com.everytrip.app.ui.theme.SecondaryText
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    uiState: LoginUiState = LoginUiState(isCheckingSession = false),
+    uiState: LoginUiState = LoginUiState(
+        sessionCheckState = SessionCheckState.Unauthenticated,
+    ),
     onBackClick: () -> Unit = {},
     onLoginClick: (String, String) -> Unit = { _, _ -> },
     onNavigateToSignUp: () -> Unit = {},
