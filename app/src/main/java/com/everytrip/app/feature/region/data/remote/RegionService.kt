@@ -24,4 +24,10 @@ internal interface RegionService {
 
     @GET("tourism-places/{contentId}")
     suspend fun getTourismDetail(@Path("contentId") contentId: String): JsonElement
+
+    @GET("places/{placeId}")
+    suspend fun getPlaceDetail(@Path("placeId") placeId: Int): JsonElement
+
+    @GET("contents/{productId}")
+    suspend fun getContentDetail(@Path("productId") productId: Int): JsonElement
 }

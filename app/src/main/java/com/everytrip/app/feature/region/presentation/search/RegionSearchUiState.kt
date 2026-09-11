@@ -5,6 +5,8 @@ import com.everytrip.app.feature.region.data.model.RegionOption
 import com.everytrip.app.feature.region.data.model.RegionPolygon
 import com.everytrip.app.feature.region.data.model.TourismPlace
 import com.everytrip.app.feature.region.data.model.TourismDetail
+import com.everytrip.app.feature.region.data.model.PlaceDetail
+import com.everytrip.app.feature.region.data.model.ContentDetail
 
 data class RegionSearchUiState(
     val isLocationPermissionGranted: Boolean = false,
@@ -29,6 +31,10 @@ data class RegionSearchUiState(
     val placesErrorMessage: String? = null,
     val selectedContentId: String? = null,
     val placeDetail: TourismDetail? = null,
+    val filmingPlaceDetail: PlaceDetail? = null,
+    val contentDetail: ContentDetail? = null,
+    val selectedPlaceId: Int? = null,
+    val selectedProductId: Int? = null,
     val isLoadingDetail: Boolean = false,
     val detailErrorMessage: String? = null,
 )

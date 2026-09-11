@@ -54,9 +54,20 @@ internal class RegionTourismController(
     }
 
     fun selectPlace(contentId: String) {
-        if (_uiState.value.places.none { it.contentId == contentId }) return
+        val place = _uiState.value.places.firstOrNull { it.contentId == contentId } ?: return
+        if (place.category == FILMING_PLACE_CATEGORY && place.placeIds.isNotEmpty()) {
+            selectFilmingPlace(place.placeIds.first())
+        } else {
+            selectRelatedPlace(place.contentId)
+        }
+    }
+
+    fun selectRelatedPlace(contentId: String) {
+        if (contentId.isBlank()) return
         val requestId = ++detailRequestId
-        _uiState.update { it.copy(selectedContentId = contentId, placeDetail = null,
+        _uiState.update { it.copy(selectedContentId = contentId, selectedPlaceId = null,
+            selectedProductId = null, placeDetail = null, filmingPlaceDetail = null,
+            contentDetail = null,
             isLoadingDetail = true, detailErrorMessage = null) }
         scope.launch {
             try {
@@ -75,10 +86,58 @@ internal class RegionTourismController(
         }
     }
 
+    fun selectFilmingPlace(placeId: Int) {
+        if (placeId <= 0) return
+        val requestId = ++detailRequestId
+        _uiState.update { it.copy(selectedContentId = null, selectedPlaceId = placeId,
+            selectedProductId = null, placeDetail = null, filmingPlaceDetail = null,
+            contentDetail = null, isLoadingDetail = true, detailErrorMessage = null) }
+        scope.launch {
+            try {
+                val detail = regionRepository.getPlaceDetail(placeId)
+                check(detail.placeId == placeId) { "Unexpected place ID" }
+                if (requestId != detailRequestId) return@launch
+                _uiState.update { it.copy(filmingPlaceDetail = detail, isLoadingDetail = false) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                if (requestId == detailRequestId) _uiState.update { it.copy(
+                    isLoadingDetail = false, detailErrorMessage = "장소 상세 정보를 불러오지 못했어요. 다시 시도해 주세요.") }
+            }
+        }
+    }
+
+    fun selectContent(productId: Int) {
+        if (productId <= 0) return
+        val requestId = ++detailRequestId
+        _uiState.update { it.copy(selectedContentId = null, selectedPlaceId = null,
+            selectedProductId = productId, placeDetail = null, filmingPlaceDetail = null,
+            contentDetail = null, isLoadingDetail = true, detailErrorMessage = null) }
+        scope.launch {
+            try {
+                val detail = regionRepository.getContentDetail(productId)
+                check(detail.productId == productId) { "Unexpected product ID" }
+                if (requestId != detailRequestId) return@launch
+                _uiState.update { it.copy(contentDetail = detail, isLoadingDetail = false) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                if (requestId == detailRequestId) _uiState.update { it.copy(
+                    isLoadingDetail = false, detailErrorMessage = "작품 상세 정보를 불러오지 못했어요. 다시 시도해 주세요.") }
+            }
+        }
+    }
+
     fun closePlaceDetail() {
         detailRequestId++
-        _uiState.update { it.copy(selectedContentId = null, placeDetail = null,
+        _uiState.update { it.copy(selectedContentId = null, selectedPlaceId = null,
+            selectedProductId = null, placeDetail = null, filmingPlaceDetail = null,
+            contentDetail = null,
             isLoadingDetail = false, detailErrorMessage = null) }
+    }
+
+    private companion object {
+        const val FILMING_PLACE_CATEGORY = "촬영지"
     }
 
 }

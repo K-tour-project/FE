@@ -8,6 +8,11 @@ import com.everytrip.app.feature.region.data.model.Sido
 import com.everytrip.app.feature.region.data.model.TourismDetail
 import com.everytrip.app.feature.region.data.model.TourismPage
 import com.everytrip.app.feature.region.data.model.TourismPlace
+import com.everytrip.app.feature.region.data.model.ContentDetail
+import com.everytrip.app.feature.region.data.model.ContentSummary
+import com.everytrip.app.feature.region.data.model.PlaceDetail
+import com.everytrip.app.feature.region.data.model.PlaceTourDetail
+import com.everytrip.app.feature.region.data.model.RelatedPlace
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -62,11 +67,103 @@ internal object RegionResponseMapper {
             tel = root.nonBlankString("tel"),
             address = root.nonBlankString("address"),
             addressDetail = root.nonBlankString("address_detail"),
+            useTime = root.nonBlankString("use_time"),
+            restDate = root.nonBlankString("rest_date"),
+            parking = root.nonBlankString("parking"),
+            petAllowed = root.nonBlankString("pet_allowed"),
             images = root.arrayValue("images")
                 ?.mapNotNull { it.stringOrNull() }
                 .orEmpty(),
+            imageCount = root.intValue("image_count")
+                ?: root.intValue("total_image_count")
+                ?: root.arrayValue("images")?.size()
+                ?: 0,
+            contents = root.arrayValue("contents")
+                ?.map { it.requireObject("Content summary").toContentSummary() }
+                .orEmpty(),
         )
     }
+
+    fun toPlaceDetail(json: JsonElement): PlaceDetail {
+        val root = json.requireObject("Place detail")
+        return PlaceDetail(
+            placeId = root.requiredInt("place_id"),
+            name = root.requiredString("name"),
+            location = root.objectValue("location")?.toRegionLocation()
+                ?: error("Place detail response does not contain location."),
+            address = root.nonBlankString("address"),
+            roadAddress = root.nonBlankString("road_address"),
+            region = root.objectValue("region")?.entrySet()?.associate { (key, value) ->
+                key to value.stringOrNull()
+            }.orEmpty(),
+            contents = root.arrayValue("contents")
+                ?.map { it.requireObject("Content summary").toContentSummary() }
+                .orEmpty(),
+            detail = root.objectValue("detail")?.toPlaceTourDetail(
+                fallbackImageCount = root.intValue("image_count")
+                    ?: root.intValue("total_image_count"),
+            ),
+            relatedPlaces = root.arrayValue("related_places")
+                ?.map { it.requireObject("Related place").toRelatedPlace() }
+                .orEmpty(),
+        )
+    }
+
+    fun toContentDetail(json: JsonElement): ContentDetail {
+        val root = json.requireObject("Content detail")
+        return ContentDetail(
+            productId = root.requiredInt("product_id"),
+            title = root.requiredString("title"),
+            overview = root.nonBlankString("overview"),
+            isOverviewTranslated = root.booleanValue("is_overview_translated") ?: false,
+            firstAirDate = root.nonBlankString("first_air_date"),
+            category = root.requiredString("category"),
+            productType = root.nonBlankString("product_type"),
+            posterUrl = root.nonBlankString("poster_url"),
+            genres = root.nonBlankString("genres"),
+            networks = root.nonBlankString("networks"),
+            episodeCount = root.intValue("episode_count"),
+            rating = root.doubleValue("rating"),
+            popularity = root.doubleValue("popularity"),
+            leadActors = root.nonBlankString("lead_actors"),
+            placeCount = root.intValue("place_count") ?: 0,
+        )
+    }
+
+    private fun JsonObject.toContentSummary() = ContentSummary(
+        productId = requiredInt("product_id"),
+        title = requiredString("title"),
+        category = requiredString("category"),
+        posterUrl = nonBlankString("poster_url"),
+        detailPath = requiredString("detail_path"),
+    )
+
+    private fun JsonObject.toPlaceTourDetail(fallbackImageCount: Int? = null) = PlaceTourDetail(
+        tourContentId = requiredString("tour_content_id"),
+        title = requiredString("title"),
+        overview = nonBlankString("overview"),
+        tel = nonBlankString("tel"),
+        homepage = nonBlankString("homepage"),
+        useTime = nonBlankString("use_time"),
+        restDate = nonBlankString("rest_date"),
+        parking = nonBlankString("parking"),
+        petAllowed = nonBlankString("pet_allowed"),
+        images = arrayValue("images")?.mapNotNull { it.stringOrNull() }.orEmpty(),
+        imageCount = intValue("image_count")
+            ?: intValue("total_image_count")
+            ?: fallbackImageCount
+            ?: arrayValue("images")?.size()
+            ?: 0,
+    )
+
+    private fun JsonObject.toRelatedPlace() = RelatedPlace(
+        relatedId = requiredString("related_id"),
+        contentId = requiredString("content_id"),
+        name = requiredString("name"),
+        sidoName = nonBlankString("sido_name"),
+        sigunguName = nonBlankString("sigungu_name"),
+        detailPath = requiredString("detail_path"),
+    )
 
     private fun parseRegionOptions(json: JsonElement): List<RegionOption> {
         val array = when {
@@ -100,6 +197,9 @@ internal object RegionResponseMapper {
             sidoName = nonBlankString("sido_name"),
             sigunguName = nonBlankString("sigungu_name"),
             category = nonBlankString("category") ?: "관광지",
+            placeIds = arrayValue("place_ids")
+                ?.mapNotNull { it.intOrNull() }
+                .orEmpty(),
         )
     }
 
@@ -191,6 +291,9 @@ internal object RegionResponseMapper {
         stringValue(key) ?: error("Response does not contain $key.")
 
     private fun JsonObject.intValue(key: String): Int? = get(key)?.intOrNull()
+
+    private fun JsonObject.requiredInt(key: String): Int =
+        intValue(key) ?: error("Response does not contain $key.")
 
     private fun JsonObject.doubleValue(key: String): Double? = get(key)?.doubleOrNull()
 

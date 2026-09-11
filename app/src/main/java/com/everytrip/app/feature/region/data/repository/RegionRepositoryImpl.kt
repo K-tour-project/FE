@@ -5,6 +5,8 @@ import com.everytrip.app.feature.region.data.model.RegionOption
 import com.everytrip.app.feature.region.data.model.Sido
 import com.everytrip.app.feature.region.data.model.TourismPage
 import com.everytrip.app.feature.region.data.model.TourismDetail
+import com.everytrip.app.feature.region.data.model.PlaceDetail
+import com.everytrip.app.feature.region.data.model.ContentDetail
 import com.everytrip.app.feature.region.data.remote.RegionApi
 
 class RegionRepositoryImpl(
@@ -15,6 +17,11 @@ class RegionRepositoryImpl(
 
     override suspend fun getTourismDetail(contentId: String): TourismDetail =
         regionApi.getTourismDetail(contentId)
+
+    override suspend fun getPlaceDetail(placeId: Int): PlaceDetail = regionApi.getPlaceDetail(placeId)
+
+    override suspend fun getContentDetail(productId: Int): ContentDetail =
+        regionApi.getContentDetail(productId)
 
     override suspend fun getSidos(): List<Sido> = regionApi.getSidos()
 

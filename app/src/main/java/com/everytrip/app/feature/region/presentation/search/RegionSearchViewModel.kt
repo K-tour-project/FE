@@ -52,6 +52,9 @@ class RegionSearchViewModel(
     fun loadMorePlaces() = tourism.loadMorePlaces()
     fun selectPlace(contentId: String) = tourism.selectPlace(contentId)
     fun closePlaceDetail() = tourism.closePlaceDetail()
+    fun selectFilmingPlace(placeId: Int) = tourism.selectFilmingPlace(placeId)
+    fun selectContent(productId: Int) = tourism.selectContent(productId)
+    fun selectRelatedPlace(contentId: String) = tourism.selectRelatedPlace(contentId)
 
     init {
         if (_uiState.value.isLocationPermissionGranted) {

@@ -94,6 +94,19 @@ class RegionTourismControllerTest {
         assertEquals(1, repository.details.size)
     }
 
+    @Test fun filmingPlaceUsesFirstPlaceIdInsteadOfContentId() {
+        state.value = state.value.copy(
+            places = listOf(TourismPlace("126121", "촬영지", null, null, null, null,
+                "촬영지", placeIds = listOf(321, 322))),
+        )
+
+        controller.selectPlace("126121")
+
+        assertEquals(listOf(321), repository.placeDetailIds)
+        assertTrue(repository.details.isEmpty())
+        assertEquals(321, state.value.selectedPlaceId)
+    }
+
     @Test fun oldDetailCannotReplaceNewSelectionOrReopenClosedPanel() {
         controller.loadMorePlaces()
         repository.pages[0].result.complete(TourismPage(listOf(place("1"), place("2")), 2, 1, false))
@@ -134,6 +147,7 @@ class RegionTourismControllerTest {
     private class FakeRepository : RegionRepository {
         val pages = mutableListOf<PageRequest>()
         val details = mutableListOf<Pair<String, CompletableDeferred<TourismDetail>>>()
+        val placeDetailIds = mutableListOf<Int>()
         override suspend fun getTourismPlaces(regionId: Int, page: Int, size: Int): TourismPage {
             val request = PageRequest(Triple(regionId, page, size))
             pages += request
@@ -143,6 +157,11 @@ class RegionTourismControllerTest {
             val response = CompletableDeferred<TourismDetail>()
             details += contentId to response
             return response.await()
+        }
+        override suspend fun getPlaceDetail(placeId: Int): PlaceDetail {
+            placeDetailIds += placeId
+            return PlaceDetail(placeId, "촬영지", RegionLocation(37.0, 127.0), null,
+                null, emptyMap(), emptyList(), null, emptyList())
         }
         override suspend fun getSidos(): List<Sido> = error("Unexpected request")
         override suspend fun getSigungus(sidoId: Int): List<RegionOption> = error("Unexpected request")

@@ -6,6 +6,8 @@ import com.everytrip.app.feature.region.data.model.RegionOption
 import com.everytrip.app.feature.region.data.model.Sido
 import com.everytrip.app.feature.region.data.model.TourismDetail
 import com.everytrip.app.feature.region.data.model.TourismPage
+import com.everytrip.app.feature.region.data.model.PlaceDetail
+import com.everytrip.app.feature.region.data.model.ContentDetail
 import retrofit2.HttpException
 
 class RegionApi private constructor(
@@ -36,6 +38,16 @@ class RegionApi private constructor(
         return execute {
             RegionResponseMapper.toTourismDetail(service.getTourismDetail(contentId))
         }
+    }
+
+    suspend fun getPlaceDetail(placeId: Int): PlaceDetail {
+        require(placeId > 0)
+        return execute { RegionResponseMapper.toPlaceDetail(service.getPlaceDetail(placeId)) }
+    }
+
+    suspend fun getContentDetail(productId: Int): ContentDetail {
+        require(productId > 0)
+        return execute { RegionResponseMapper.toContentDetail(service.getContentDetail(productId)) }
     }
 
     private suspend fun <T> execute(request: suspend () -> T): T {

@@ -5,6 +5,8 @@ import com.everytrip.app.feature.region.data.model.RegionOption
 import com.everytrip.app.feature.region.data.model.Sido
 import com.everytrip.app.feature.region.data.model.TourismPage
 import com.everytrip.app.feature.region.data.model.TourismDetail
+import com.everytrip.app.feature.region.data.model.PlaceDetail
+import com.everytrip.app.feature.region.data.model.ContentDetail
 
 interface RegionRepository {
     suspend fun getSidos(): List<Sido>
@@ -12,4 +14,8 @@ interface RegionRepository {
     suspend fun getBoundary(regionId: Int): RegionBoundary
     suspend fun getTourismPlaces(regionId: Int, page: Int, size: Int = 20): TourismPage
     suspend fun getTourismDetail(contentId: String): TourismDetail
+    suspend fun getPlaceDetail(placeId: Int): PlaceDetail =
+        throw UnsupportedOperationException("Place detail is not implemented")
+    suspend fun getContentDetail(productId: Int): ContentDetail =
+        throw UnsupportedOperationException("Content detail is not implemented")
 }

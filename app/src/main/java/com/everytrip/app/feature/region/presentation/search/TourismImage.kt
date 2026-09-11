@@ -70,7 +70,7 @@ fun TourismImage(url: String?, name: String, modifier: Modifier = Modifier) {
             modifier = modifier, contentScale = ContentScale.Crop)
     } else {
         Box(modifier.background(Color(0xFFE8F2FF)), contentAlignment = Alignment.Center) {
-            Text("이미지 없음", color = Color(0xFF667085))
+            Text("썸네일 없음", color = Color(0xFF667085))
         }
     }
 }

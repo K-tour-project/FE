@@ -142,11 +142,18 @@ fun RegionSearchScreen(
         }
         uiState.regionErrorMessage?.let { Text("지역 정보를 불러오지 못했어요. 지역을 다시 선택해 주세요.") }
     }
-    if (uiState.selectedContentId != null) {
+    if (uiState.selectedContentId != null || uiState.selectedPlaceId != null ||
+        uiState.selectedProductId != null) {
         RegionDetailScreen(
             state = uiState,
             onClose = viewModel::closePlaceDetail,
-            onRetry = { uiState.selectedContentId?.let(viewModel::selectPlace) },
+            onRetry = {
+                uiState.selectedPlaceId?.let(viewModel::selectFilmingPlace)
+                    ?: uiState.selectedProductId?.let(viewModel::selectContent)
+                    ?: uiState.selectedContentId?.let(viewModel::selectRelatedPlace)
+            },
+            onContentClick = viewModel::selectContent,
+            onRelatedPlaceClick = viewModel::selectRelatedPlace,
         )
     }
 }
