@@ -130,15 +130,34 @@ class RegionResponseMapperTest {
     fun `content detail maps product fields without match similarity`() {
         val result = RegionResponseMapper.toContentDetail(JsonParser.parseString(
             """{
-              "product_id":10,"title":"작품","overview":null,"is_overview_translated":true,
+              "product_id":10,"title":"작품","overview":null,
               "first_air_date":"2024-01-01","category":"drama","product_type":"Miniseries",
               "poster_url":null,"genres":"드라마|로맨스","networks":"tvN","episode_count":16,
-              "rating":8.5,"popularity":12.3,"lead_actors":"배우1|배우2","place_count":5
+              "rating":8.5,"popularity":12.3,"lead_actors":"배우1|배우2"
             }""".trimIndent(),
         ))
 
         assertEquals(10, result.productId)
         assertEquals(8.5, result.rating ?: 0.0, 0.0)
-        assertEquals(5, result.placeCount)
+        assertEquals(null, result.runtime)
+    }
+
+    @Test
+    fun `movie detail maps runtime without drama-only fields`() {
+        val result = RegionResponseMapper.toContentDetail(JsonParser.parseString(
+            """{
+              "product_id":139,"title":"기생충","overview":"소개",
+              "first_air_date":"2019-05-30","category":"MOVIE","poster_url":"https://image",
+              "genres":"드라마|스릴러","runtime":132,"rating":8.5,
+              "popularity":100.0
+            }""".trimIndent(),
+        ))
+
+        assertEquals("MOVIE", result.category)
+        assertEquals(132, result.runtime)
+        assertEquals(null, result.productType)
+        assertEquals(null, result.networks)
+        assertEquals(null, result.episodeCount)
+        assertEquals(null, result.leadActors)
     }
 }

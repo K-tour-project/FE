@@ -62,6 +62,9 @@ import androidx.compose.ui.unit.sp
 import androidx.core.text.HtmlCompat
 import com.everytrip.app.feature.region.data.model.ContentDetail
 import com.everytrip.app.feature.region.data.model.ContentSummary
+import com.everytrip.app.feature.region.data.model.categoryLabel
+import com.everytrip.app.feature.region.data.model.isDrama
+import com.everytrip.app.feature.region.data.model.isMovie
 import com.everytrip.app.feature.region.data.model.PlaceDetail
 import com.everytrip.app.feature.region.data.model.PlaceTourDetail
 import com.everytrip.app.feature.region.data.model.RelatedPlace
@@ -333,7 +336,7 @@ private fun ContentCarousel(contents: List<ContentSummary>, onClick: (Int) -> Un
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     Text(content.title, color = NavyText, fontWeight = FontWeight.Bold,
                         maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(content.category, color = SecondaryText, style = MaterialTheme.typography.bodySmall)
+                    Text(content.categoryLabel, color = SecondaryText, style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
@@ -372,11 +375,20 @@ private fun ContentDetailContent(content: ContentDetail, onClose: () -> Unit) {
             Modifier.fillMaxWidth().height(360.dp).padding(horizontal = 20.dp).clip(RoundedCornerShape(18.dp)))
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             content.overview?.let { BodyDescription(it) }
+            DetailText("구분", content.categoryLabel)
+            DetailText("공개일", content.firstAirDate)
             DetailText("장르", content.genres?.replace("|", " · "))
-            DetailText("방송사", content.networks)
-            DetailText("주연", content.leadActors?.replace("|", " · "))
+            if (content.isMovie()) {
+                DetailText("상영 시간", content.runtime?.let { "${it}분" })
+            }
+            if (content.isDrama()) {
+                DetailText("작품 유형", content.productType)
+                DetailText("방송사", content.networks)
+                DetailText("회차", content.episodeCount?.let { "${it}부작" })
+                DetailText("주연", content.leadActors?.replace("|", " · "))
+            }
             DetailText("평점", content.rating?.toString())
-            DetailText("촬영지", "${content.placeCount}곳")
+            DetailText("인기도", content.popularity?.toString())
         }
     }
 }

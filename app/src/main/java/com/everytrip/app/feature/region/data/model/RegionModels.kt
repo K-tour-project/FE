@@ -80,10 +80,10 @@ data class ContentDetail(
     val productId: Int,
     val title: String,
     val overview: String?,
-    val isOverviewTranslated: Boolean,
     val firstAirDate: String?,
     val category: String,
     val productType: String?,
+    val runtime: Int?,
     val posterUrl: String?,
     val genres: String?,
     val networks: String?,
@@ -91,8 +91,23 @@ data class ContentDetail(
     val rating: Double?,
     val popularity: Double?,
     val leadActors: String?,
-    val placeCount: Int,
 )
+
+val ContentSummary.categoryLabel: String
+    get() = category.toContentCategoryLabel()
+
+val ContentDetail.categoryLabel: String
+    get() = category.toContentCategoryLabel()
+
+fun String.toContentCategoryLabel(): String = when (uppercase()) {
+    "MOVIE" -> "영화"
+    "DRAMA" -> "드라마"
+    else -> this
+}
+
+fun ContentDetail.isMovie(): Boolean = category.equals("MOVIE", ignoreCase = true)
+
+fun ContentDetail.isDrama(): Boolean = category.equals("DRAMA", ignoreCase = true)
 
 data class PlaceTourDetail(
     val tourContentId: String,

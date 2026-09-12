@@ -148,7 +148,12 @@ class RegionTourismControllerTest {
         val pages = mutableListOf<PageRequest>()
         val details = mutableListOf<Pair<String, CompletableDeferred<TourismDetail>>>()
         val placeDetailIds = mutableListOf<Int>()
-        override suspend fun getTourismPlaces(regionId: Int, page: Int, size: Int): TourismPage {
+        override suspend fun getTourismPlaces(
+            regionId: Int,
+            page: Int,
+            size: Int,
+            productId: Int?,
+        ): TourismPage {
             val request = PageRequest(Triple(regionId, page, size))
             pages += request
             return request.result.await()

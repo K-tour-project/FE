@@ -115,10 +115,10 @@ internal object RegionResponseMapper {
             productId = root.requiredInt("product_id"),
             title = root.requiredString("title"),
             overview = root.nonBlankString("overview"),
-            isOverviewTranslated = root.booleanValue("is_overview_translated") ?: false,
             firstAirDate = root.nonBlankString("first_air_date"),
             category = root.requiredString("category"),
             productType = root.nonBlankString("product_type"),
+            runtime = root.intValue("runtime"),
             posterUrl = root.nonBlankString("poster_url"),
             genres = root.nonBlankString("genres"),
             networks = root.nonBlankString("networks"),
@@ -126,7 +126,6 @@ internal object RegionResponseMapper {
             rating = root.doubleValue("rating"),
             popularity = root.doubleValue("popularity"),
             leadActors = root.nonBlankString("lead_actors"),
-            placeCount = root.intValue("place_count") ?: 0,
         )
     }
 

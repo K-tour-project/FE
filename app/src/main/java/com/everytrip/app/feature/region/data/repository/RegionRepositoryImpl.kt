@@ -12,8 +12,12 @@ import com.everytrip.app.feature.region.data.remote.RegionApi
 class RegionRepositoryImpl(
     private val regionApi: RegionApi = RegionApi(),
 ) : RegionRepository {
-    override suspend fun getTourismPlaces(regionId: Int, page: Int, size: Int): TourismPage =
-        regionApi.getTourismPlaces(regionId, page, size)
+    override suspend fun getTourismPlaces(
+        regionId: Int,
+        page: Int,
+        size: Int,
+        productId: Int?,
+    ): TourismPage = regionApi.getTourismPlaces(regionId, page, size, productId)
 
     override suspend fun getTourismDetail(contentId: String): TourismDetail =
         regionApi.getTourismDetail(contentId)

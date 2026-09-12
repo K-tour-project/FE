@@ -12,7 +12,12 @@ interface RegionRepository {
     suspend fun getSidos(): List<Sido>
     suspend fun getSigungus(sidoId: Int): List<RegionOption>
     suspend fun getBoundary(regionId: Int): RegionBoundary
-    suspend fun getTourismPlaces(regionId: Int, page: Int, size: Int = 20): TourismPage
+    suspend fun getTourismPlaces(
+        regionId: Int,
+        page: Int,
+        size: Int = 20,
+        productId: Int? = null,
+    ): TourismPage
     suspend fun getTourismDetail(contentId: String): TourismDetail
     suspend fun getPlaceDetail(placeId: Int): PlaceDetail =
         throw UnsupportedOperationException("Place detail is not implemented")

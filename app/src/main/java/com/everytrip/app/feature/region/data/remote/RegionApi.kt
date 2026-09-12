@@ -27,9 +27,14 @@ class RegionApi private constructor(
         RegionResponseMapper.toBoundary(service.getBoundary(regionId))
     }
 
-    suspend fun getTourismPlaces(regionId: Int, page: Int, size: Int): TourismPage = execute {
+    suspend fun getTourismPlaces(
+        regionId: Int,
+        page: Int,
+        size: Int,
+        productId: Int? = null,
+    ): TourismPage = execute {
         RegionResponseMapper.toTourismPage(
-            service.getTourismPlaces(regionId, page, size),
+            service.getTourismPlaces(regionId, page, size, productId),
         )
     }
 
