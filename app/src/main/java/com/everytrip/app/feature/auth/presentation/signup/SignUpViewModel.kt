@@ -73,7 +73,13 @@ class SignUpViewModel(
         }
     }
 
-    fun signUp(email: String, password: String, passwordCheck: String, nickname: String) {
+    fun signUp(
+        email: String,
+        password: String,
+        passwordCheck: String,
+        nickname: String,
+        profileImageUrl: String?,
+    ) {
         val validationMessage = validateSignUp(password, passwordCheck, nickname)
         if (validationMessage != null) {
             _uiState.update { it.copy(message = validationMessage) }
@@ -87,6 +93,7 @@ class SignUpViewModel(
                     email = email.trim(),
                     password = password,
                     nickname = nickname.trim(),
+                    profileImageUrl = profileImageUrl,
                 )
             }
                 .onSuccess { response ->

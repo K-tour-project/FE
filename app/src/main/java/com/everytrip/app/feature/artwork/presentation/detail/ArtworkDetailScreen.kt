@@ -68,6 +68,8 @@ fun ArtworkDetailScreen(
     modifier: Modifier = Modifier,
     onFilmingLocationClick: (FilmingLocation) -> Unit = {},
     onRelatedProductClick: (ContentSummary) -> Unit = {},
+    isSaved: Boolean = false,
+    onSaveClick: () -> Unit = {},
 ) {
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         DetailTopBar(
@@ -79,6 +81,8 @@ fun ArtworkDetailScreen(
             selectedActionColor = FavoritePink,
             actionContentDescription = "좋아요",
             selectedActionContentDescription = "좋아요 취소",
+            isActionSelected = isSaved,
+            onActionClick = onSaveClick,
         )
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),

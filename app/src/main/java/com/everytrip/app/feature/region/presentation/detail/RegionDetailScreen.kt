@@ -85,6 +85,12 @@ fun RegionDetailScreen(
     onContentClick: (Int) -> Unit,
     onFilmingPlaceClick: (Int) -> Unit,
     onRelatedPlaceClick: (String) -> Unit,
+    favoritePlaceIds: Set<Int> = emptySet(),
+    favoriteTourismIds: Set<String> = emptySet(),
+    savedProductIds: Set<Int> = emptySet(),
+    onTogglePlace: (Int) -> Unit = {},
+    onToggleTourism: (String) -> Unit = {},
+    onToggleProduct: (Int) -> Unit = {},
 ) {
     key(state.selectedContentId, state.selectedPlaceId, state.selectedProductId) {
         ModalBottomSheet(
@@ -109,12 +115,16 @@ fun RegionDetailScreen(
                         onClose = onClose,
                         onContentClick = onContentClick,
                         onRelatedPlaceClick = onRelatedPlaceClick,
+                        isFavorite = state.filmingPlaceDetail.placeId in favoritePlaceIds,
+                        onFavoriteClick = { onTogglePlace(state.filmingPlaceDetail.placeId) },
                     )
                     state.placeDetail != null -> TourismPlaceContent(
                         detail = state.placeDetail,
                         onClose = onClose,
                         onContentClick = onContentClick,
                         onRelatedPlaceClick = onRelatedPlaceClick,
+                        isFavorite = state.placeDetail.contentId in favoriteTourismIds,
+                        onFavoriteClick = { onToggleTourism(state.placeDetail.contentId) },
                     )
                     state.contentDetail != null -> ArtworkDetailScreen(
                         content = state.contentDetail,
@@ -127,6 +137,8 @@ fun RegionDetailScreen(
                             product.detailPath.substringAfterLast('/').toIntOrNull()
                                 ?.let(onContentClick)
                         },
+                        isSaved = state.contentDetail.productId in savedProductIds,
+                        onSaveClick = { onToggleProduct(state.contentDetail.productId) },
                     )
                 }
             }
@@ -140,10 +152,12 @@ private fun FilmingPlaceContent(
     onClose: () -> Unit,
     onContentClick: (Int) -> Unit,
     onRelatedPlaceClick: (String) -> Unit,
+    isFavorite: Boolean = false,
+    onFavoriteClick: () -> Unit = {},
 ) {
     val tour = place.detail
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        DetailTopBar(place.name, onClose)
+        DetailTopBar(place.name, onClose, isActionSelected = isFavorite, onActionClick = onFavoriteClick)
         ImageCarousel(tour?.images.orEmpty(), tour?.imageCount ?: 0, place.name)
         Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -168,9 +182,11 @@ private fun TourismPlaceContent(
     onClose: () -> Unit,
     onContentClick: (Int) -> Unit,
     onRelatedPlaceClick: (String) -> Unit,
+    isFavorite: Boolean = false,
+    onFavoriteClick: () -> Unit = {},
 ) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        DetailTopBar(detail.name, onClose)
+        DetailTopBar(detail.name, onClose, isActionSelected = isFavorite, onActionClick = onFavoriteClick)
         ImageCarousel(detail.images, detail.imageCount, detail.name)
         Column(Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -353,8 +369,8 @@ private fun RelatedPlaceCarousel(places: List<RelatedPlace>, onClick: (String) -
             Card(
                 Modifier.width(192.dp).height(98.dp).clickable { onClick(place.contentId) },
                 shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(Color.White),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Border),
-                elevation = CardDefaults.cardElevation(2.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, PrimaryBlue),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             ) {
                 Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.Center) {
                     Text(place.name, color = NavyText, style = MaterialTheme.typography.titleMedium,

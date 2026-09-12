@@ -40,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,9 +56,43 @@ import com.everytrip.app.core.designsystem.component.MainTopBar
 import com.everytrip.app.feature.region.presentation.search.TourismImage
 import com.everytrip.app.ui.theme.BodyText
 import com.everytrip.app.ui.theme.Border
+import com.everytrip.app.ui.theme.FavoritePink
 import com.everytrip.app.ui.theme.PrimaryBlue
 import com.everytrip.app.ui.theme.ProjectTheme
 import com.everytrip.app.ui.theme.SecondaryText
+
+@Composable
+fun MyPageRoute(
+    viewModel: FavoriteViewModel,
+    onSettingsClick: () -> Unit = {},
+    onPlaceClick: (String) -> Unit = {},
+    onWorkClick: (String) -> Unit = {},
+) {
+    val state by viewModel.uiState.collectAsState()
+    androidx.compose.runtime.LaunchedEffect(Unit) { viewModel.refresh() }
+    MyPageScreen(
+        onSettingsClick = onSettingsClick,
+        onPlaceClick = { id ->
+            state.myPage.favoritePlaces.firstOrNull { it.favoriteId == id }
+                ?.detailPath?.let(onPlaceClick)
+        },
+        onWorkClick = { id ->
+            state.savedProducts.firstOrNull { it.productId.toLong() == id }
+                ?.detailPath?.let(onWorkClick)
+        },
+        likedPlaces = state.myPage.favoritePlaces.map {
+            LikedPlaceUi(it.favoriteId, it.name, it.description, it.address, it.imageUrl)
+        },
+        savedWorks = state.savedProducts.map {
+            SavedWorkUi(it.productId.toLong(), it.title, it.category, it.year, it.overview, it.locationSummary, it.posterUrl)
+        },
+        likedPlaceCount = state.myPage.favoritePlaceCount,
+        savedWorkCount = state.myPage.savedProductCount,
+        profileName = state.myPage.nickname.ifBlank { "사용자" },
+        onUnlikePlace = viewModel::deleteFavorite,
+        onUnsaveWork = { viewModel.toggleProduct(it.toInt()) },
+    )
+}
 
 /** 마이페이지의 텍스트 크기는 여기서 한 번에 조정할 수 있습니다. */
 object MyPageTextSize {
@@ -101,6 +136,9 @@ fun MyPageScreen(
     savedWorks: List<SavedWorkUi> = previewSavedWorks,
     likedPlaceCount: Int = 12,
     savedWorkCount: Int = 6,
+    profileName: String = "lee neng",
+    onUnlikePlace: (Long) -> Unit = {},
+    onUnsaveWork: (Long) -> Unit = {},
 ) {
     var selectedTab by remember(initialTab) { mutableStateOf(initialTab) }
 
@@ -110,14 +148,19 @@ fun MyPageScreen(
             icon = Icons.Outlined.Settings,
             iconContentDescription = "설정",
             onIconClick = onSettingsClick,
-            showActionBorder = true,
+            showActionBorder = false,
         )
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 20.dp),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                top = 12.dp,
+                end = 16.dp,
+                bottom = 20.dp,
+            ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { ProfileCard() }
+            item { ProfileCard(profileName) }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     SummaryCard(
@@ -139,10 +182,10 @@ fun MyPageScreen(
             item { MyPageTabSelector(selectedTab) { selectedTab = it } }
             when (selectedTab) {
                 MyPageTab.LikedPlaces -> items(likedPlaces, key = { "place-${it.id}" }) {
-                    LikedPlaceCard(it, onClick = { onPlaceClick(it.id) })
+                    LikedPlaceCard(it, onClick = { onPlaceClick(it.id) }, onUnlike = { onUnlikePlace(it.id) })
                 }
                 MyPageTab.SavedWorks -> items(savedWorks, key = { "work-${it.id}" }) {
-                    SavedWorkCard(it, onClick = { onWorkClick(it.id) })
+                    SavedWorkCard(it, onClick = { onWorkClick(it.id) }, onUnsave = { onUnsaveWork(it.id) })
                 }
             }
         }
@@ -150,7 +193,7 @@ fun MyPageScreen(
 }
 
 @Composable
-private fun ProfileCard() {
+private fun ProfileCard(profileName: String) {
     SurfaceCard(height = 130.dp) {
         Row(
             modifier = Modifier.fillMaxSize().padding(18.dp),
@@ -164,7 +207,7 @@ private fun ProfileCard() {
             }
             Spacer(Modifier.width(18.dp))
             Column(Modifier.weight(1f)) {
-                Text("lee neng", fontSize = MyPageTextSize.profileName, fontWeight = FontWeight.Bold, color = BodyText)
+                Text(profileName, fontSize = MyPageTextSize.profileName, fontWeight = FontWeight.Bold, color = BodyText)
                 Spacer(Modifier.height(6.dp))
                 Text("콘텐츠로 떠나는 여행을 저장해보세요.", fontSize = MyPageTextSize.profileMessage, color = SecondaryText)
                 Spacer(Modifier.height(12.dp))
@@ -189,17 +232,22 @@ private fun SummaryCard(
         border = BorderStroke(1.dp, Border),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 18.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
         ) {
-            Box(Modifier.size(42.dp), contentAlignment = Alignment.Center) { icon() }
-            Spacer(Modifier.width(10.dp))
-            Column(Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(30.dp), contentAlignment = Alignment.Center) { icon() }
+                Spacer(Modifier.width(8.dp))
                 Text(label, fontSize = MyPageTextSize.summaryLabel, color = BodyText)
-                Text(count.toString(), fontSize = MyPageTextSize.summaryCount, fontWeight = FontWeight.Bold, color = PrimaryBlue)
             }
-            Icon(Icons.Outlined.ChevronRight, null, tint = BodyText)
+            Text(
+                text = count.toString(),
+                fontSize = MyPageTextSize.summaryCount,
+                fontWeight = FontWeight.Bold,
+                color = PrimaryBlue,
+            )
         }
     }
 }
@@ -215,13 +263,6 @@ private fun MyPageTabSelector(selected: MyPageTab, onSelected: (MyPageTab) -> Un
             Box(
                 modifier = Modifier.weight(1f).fillMaxSize().clip(RoundedCornerShape(27.dp))
                     .background(if (isSelected) PrimaryBlue.copy(alpha = 0.09f) else Color.Transparent)
-                    .then(
-                        if (isSelected) Modifier.border(
-                            1.dp,
-                            PrimaryBlue.copy(alpha = 0.22f),
-                            RoundedCornerShape(27.dp),
-                        ) else Modifier
-                    )
                     .clickable { onSelected(tab) },
                 contentAlignment = Alignment.Center,
             ) {
@@ -237,13 +278,14 @@ private fun MyPageTabSelector(selected: MyPageTab, onSelected: (MyPageTab) -> Un
 }
 
 @Composable
-private fun LikedPlaceCard(place: LikedPlaceUi, onClick: () -> Unit) {
+private fun LikedPlaceCard(place: LikedPlaceUi, onClick: () -> Unit, onUnlike: () -> Unit) {
     ListCard(onClick) {
         TourismImage(place.imageUrl, place.name, Modifier.width(138.dp).fillMaxSize())
         Column(Modifier.weight(1f).padding(16.dp, 14.dp, 4.dp, 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(place.name, Modifier.weight(1f), color = BodyText, fontSize = MyPageTextSize.cardTitle, fontWeight = FontWeight.Bold, maxLines = 1)
-                Icon(Icons.Filled.Favorite, "찜 해제", tint = PrimaryBlue)
+                Icon(Icons.Filled.Favorite, "찜 해제", tint = FavoritePink, modifier = Modifier.clickable(onClick = onUnlike))
+                Spacer(Modifier.width(12.dp))
             }
             Spacer(Modifier.height(6.dp))
             Text(place.description, color = SecondaryText, fontSize = MyPageTextSize.cardBody, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -259,13 +301,14 @@ private fun LikedPlaceCard(place: LikedPlaceUi, onClick: () -> Unit) {
 }
 
 @Composable
-private fun SavedWorkCard(work: SavedWorkUi, onClick: () -> Unit) {
+private fun SavedWorkCard(work: SavedWorkUi, onClick: () -> Unit, onUnsave: () -> Unit) {
     ListCard(onClick) {
         TourismImage(work.posterUrl, work.title, Modifier.width(124.dp).fillMaxSize())
         Column(Modifier.weight(1f).padding(16.dp, 14.dp, 4.dp, 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(work.title, Modifier.weight(1f), color = BodyText, fontSize = MyPageTextSize.cardTitle, fontWeight = FontWeight.Bold, maxLines = 1)
-                Icon(Icons.Filled.Bookmark, "저장 해제", tint = PrimaryBlue)
+                Icon(Icons.Filled.Bookmark, "저장 해제", tint = PrimaryBlue, modifier = Modifier.clickable(onClick = onUnsave))
+                Spacer(Modifier.width(12.dp))
             }
             Text("${work.category}  |  ${work.year}", color = SecondaryText, fontSize = MyPageTextSize.cardMeta)
             Spacer(Modifier.height(5.dp))

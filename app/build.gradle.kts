@@ -17,6 +17,9 @@ val kakaoNativeAppKey =
 val backendBaseUrl =
     localProperties.getProperty("BACKEND_BASE_URL") ?: ""
 
+val chatBaseUrl =
+    localProperties.getProperty("CHAT_BASE_URL") ?: "http://10.0.2.2:8001/"
+
 val googleWebClientId =
     localProperties.getProperty("GOOGLE_WEB_CLIENT_ID") ?: ""
 
@@ -46,6 +49,12 @@ extensions.configure<ApplicationExtension>("android") {
             "String",
             "BACKEND_BASE_URL",
             "\"$backendBaseUrl\""
+        )
+
+        buildConfigField(
+            "String",
+            "CHAT_BASE_URL",
+            "\"$chatBaseUrl\""
         )
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -86,6 +95,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

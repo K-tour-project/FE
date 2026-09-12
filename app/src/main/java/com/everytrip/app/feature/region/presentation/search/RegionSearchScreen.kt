@@ -27,13 +27,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.everytrip.app.core.designsystem.component.MainTopBar
+import com.everytrip.app.feature.mypage.presentation.FavoriteUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegionSearchScreen(
     modifier: Modifier = Modifier,
     viewModel: RegionSearchViewModel,
-    onTitleClick: () -> Unit = {}
+    onTitleClick: () -> Unit = {},
+    favoriteState: FavoriteUiState = FavoriteUiState(),
+    onTogglePlace: (Int) -> Unit = {},
+    onToggleTourism: (String) -> Unit = {},
+    onToggleProduct: (Int) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -149,6 +154,12 @@ fun RegionSearchScreen(
             onContentClick = viewModel::selectContent,
             onFilmingPlaceClick = viewModel::selectFilmingPlace,
             onRelatedPlaceClick = viewModel::selectRelatedPlace,
+            favoritePlaceIds = favoriteState.favoritePlaceIds,
+            favoriteTourismIds = favoriteState.favoriteTourismIds,
+            savedProductIds = favoriteState.savedProductIds,
+            onTogglePlace = onTogglePlace,
+            onToggleTourism = onToggleTourism,
+            onToggleProduct = onToggleProduct,
         )
     }
 }

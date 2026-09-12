@@ -1,8 +1,14 @@
 package com.everytrip.app.feature.auth.presentation.signup
 
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +34,7 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -35,6 +42,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,10 +50,15 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -59,6 +72,8 @@ import com.everytrip.app.ui.theme.NavyText
 import com.everytrip.app.ui.theme.PrimaryBlue
 import com.everytrip.app.ui.theme.SecondaryText
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.time.Duration.Companion.seconds
 
 internal fun canSubmitSignUp(
@@ -73,7 +88,7 @@ fun SignUpScreen(
     onBackClick: () -> Unit = {},
     onSendCodeClick: (String) -> Unit = {},
     onVerifyCodeClick: (String, String) -> Unit = { _, _ -> },
-    onSignUpClick: (String, String, String, String) -> Unit = { _, _, _, _ -> },
+    onSignUpClick: (String, String, String, String, String?) -> Unit = { _, _, _, _, _ -> },
     onTermsClick: () -> Unit = {},
     onPrivacyClick: () -> Unit = {},
     onMessageShown: () -> Unit = {},
@@ -82,6 +97,7 @@ fun SignUpScreen(
     var password by remember { mutableStateOf("") }
     var passwordCheck by remember { mutableStateOf("") }
     var nickname by remember { mutableStateOf("") }
+    var profileImageUri by remember { mutableStateOf<Uri?>(null) }
     var termsAccepted by remember { mutableStateOf(false) }
     var privacyAccepted by remember { mutableStateOf(false) }
     var verificationCode by remember { mutableStateOf("") }
@@ -131,7 +147,11 @@ fun SignUpScreen(
             )
 
             Spacer(modifier = Modifier.height(22.dp))
-            ProfilePhotoPicker()
+            ProfilePhotoPicker(
+                selectedImageUri = profileImageUri,
+                onDefaultImageSelected = { profileImageUri = null },
+                onGalleryImageSelected = { profileImageUri = it },
+            )
             Spacer(modifier = Modifier.height(22.dp))
 
             Row(
@@ -265,7 +285,15 @@ fun SignUpScreen(
 
             GradientButton(
                 text = if (uiState.isSigningUp) "가입 중" else "회원가입 완료",
-                onClick = { onSignUpClick(email, password, passwordCheck, nickname) },
+                onClick = {
+                    onSignUpClick(
+                        email,
+                        password,
+                        passwordCheck,
+                        nickname,
+                        profileImageUri?.toString(),
+                    )
+                },
                 enabled = canSubmitSignUp(termsAccepted, privacyAccepted) &&
                     uiState.emailVerified &&
                     !uiState.isSigningUp,
@@ -278,14 +306,52 @@ fun SignUpScreen(
 
 @Composable
 private fun ProfilePhotoPicker(
+    selectedImageUri: Uri?,
+    onDefaultImageSelected: () -> Unit,
+    onGalleryImageSelected: (Uri) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var showSourceDialog by remember { mutableStateOf(false) }
+    val galleryLauncher = rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
+        uri?.let(onGalleryImageSelected)
+    }
+    val selectedBitmap by selectedImageBitmap(selectedImageUri)
+
+    if (showSourceDialog) {
+        AlertDialog(
+            onDismissRequest = { showSourceDialog = false },
+            title = { Text("프로필 사진 선택") },
+            text = {
+                Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                    TextButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = {
+                            onDefaultImageSelected()
+                            showSourceDialog = false
+                        },
+                    ) { Text("기본 이미지") }
+                    TextButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = {
+                            showSourceDialog = false
+                            galleryLauncher.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
+                        },
+                    ) { Text("갤러리에서 선택") }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showSourceDialog = false }) { Text("취소") }
+            },
+        )
+    }
+
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
-            modifier = Modifier.size(96.dp),
+            modifier = Modifier.size(96.dp).clickable { showSourceDialog = true },
             contentAlignment = Alignment.Center,
         ) {
             Box(
@@ -296,12 +362,21 @@ private fun ProfilePhotoPicker(
                     .border(1.5.dp, PrimaryBlue, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Person,
-                    contentDescription = null,
-                    modifier = Modifier.size(56.dp),
-                    tint = Color(0xFF9DBEFF),
-                )
+                if (selectedBitmap != null) {
+                    Image(
+                        bitmap = selectedBitmap!!,
+                        contentDescription = "선택한 프로필 사진",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.Person,
+                        contentDescription = null,
+                        modifier = Modifier.size(56.dp),
+                        tint = Color(0xFF9DBEFF),
+                    )
+                }
             }
 
             Box(
@@ -329,6 +404,24 @@ private fun ProfilePhotoPicker(
             fontWeight = FontWeight.SemiBold,
             color = NavyText,
         )
+    }
+}
+
+@Composable
+private fun selectedImageBitmap(uri: Uri?): androidx.compose.runtime.State<ImageBitmap?> {
+    val context = LocalContext.current
+    return produceState<ImageBitmap?>(initialValue = null, key1 = uri) {
+        value = if (uri == null) {
+            null
+        } else {
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.openInputStream(uri)?.use { stream ->
+                        BitmapFactory.decodeStream(stream)?.asImageBitmap()
+                    }
+                }.getOrNull()
+            }
+        }
     }
 }
 

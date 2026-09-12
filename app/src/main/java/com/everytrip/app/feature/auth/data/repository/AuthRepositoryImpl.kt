@@ -26,8 +26,12 @@ class AuthRepositoryImpl(
     override suspend fun verifyEmailCode(email: String, code: String): EmailVerifyResponse =
         authApi.verifyEmailCode(email, code)
 
-    override suspend fun signUp(email: String, password: String, nickname: String): SignUpResponse =
-        authApi.signUp(email, password, nickname)
+    override suspend fun signUp(
+        email: String,
+        password: String,
+        nickname: String,
+        profileImageUrl: String?,
+    ): SignUpResponse = authApi.signUp(email, password, nickname, profileImageUrl)
 
     override suspend fun login(email: String, password: String): AuthSession {
         val session = authApi.login(

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -36,14 +37,17 @@ fun MainTopBar(
     showActionBorder: Boolean = false,
 ) {
     TopAppBar(
-        modifier = Modifier.height(80.dp),
+        modifier = Modifier.height(65.dp),
+        // Activity에서 이미 시스템 상태바 영역을 처리하므로 TopAppBar의 중복 상단 여백을 제거합니다.
+        windowInsets = WindowInsets(0, 0, 0, 0),
         title = {
             Text(
                 text = title,
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
                 color = PrimaryBlue,
-                modifier = Modifier.clickable(onClick = onTitleClick),
+                modifier = Modifier
+                    .clickable(onClick = onTitleClick),
             )
         },
         actions = {

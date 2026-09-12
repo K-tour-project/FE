@@ -3,134 +3,153 @@ package com.everytrip.app.feature.chatbot.presentation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.everytrip.app.core.designsystem.component.MainTopBar
+import com.everytrip.app.feature.chatbot.data.ChatPlace
+import com.everytrip.app.feature.region.presentation.search.TourismImage
 import com.everytrip.app.ui.theme.BodyText
 import com.everytrip.app.ui.theme.Border
-import com.everytrip.app.ui.theme.PrimaryBlue
-import com.everytrip.app.ui.theme.SecondaryText
 import com.everytrip.app.ui.theme.Chat
+import com.everytrip.app.ui.theme.PrimaryBlue
 import com.everytrip.app.ui.theme.PrimaryBlueDeep
+import com.everytrip.app.ui.theme.ProjectTheme
+import com.everytrip.app.ui.theme.SecondaryText
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AiChatbotScreen() {
+fun AiChatbotScreen(
+    viewModel: ChatViewModel,
+    onPlaceClick: (String) -> Unit = {},
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    AiChatbotContent(
+        uiState = uiState,
+        onSendMessage = viewModel::sendMessage,
+        onPlaceClick = onPlaceClick,
+        onErrorShown = viewModel::consumeError,
+    )
+}
+
+@Composable
+private fun AiChatbotContent(
+    uiState: ChatUiState,
+    onSendMessage: (String) -> Unit,
+    onPlaceClick: (String) -> Unit,
+    onErrorShown: () -> Unit,
+) {
     var inputText by remember { mutableStateOf("") }
+    val listState = rememberLazyListState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState.messages.size, uiState.isLoading) {
+        if (uiState.messages.isNotEmpty()) {
+            listState.animateScrollToItem(uiState.messages.lastIndex)
+        }
+    }
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            onErrorShown()
+        }
+    }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "에브리 트립 도우미",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { /* 뒤로가기 액션 */ }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로가기")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { /* 닫기 액션 */ }) {
-                        Icon(Icons.Default.Close, contentDescription = "닫기")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
-                )
-            )
-        },
+        topBar = { MainTopBar(title = "Every Trip AI") },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             ChatInputBar(
                 inputText = inputText,
+                enabled = !uiState.isLoading,
                 onInputChanged = { inputText = it },
-                onSendClicked = { /* 전송 액션 */ }
+                onSendClicked = {
+                    if (inputText.isNotBlank()) {
+                        onSendMessage(inputText)
+                        inputText = ""
+                    }
+                },
             )
         },
-        containerColor = Color.White
+        containerColor = Color.White,
     ) { paddingValues ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            state = listState,
+            modifier = Modifier.fillMaxSize().padding(paddingValues),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            item { Spacer(modifier = Modifier.height(8.dp)) }
-
-            // 첫 번째 챗봇 인사말
-            item {
-                BotMessageBubble(
-                    text = "안녕하세요! 어떤 여행 계획을 도와드릴까요?",
-                    backgroundColor = Chat
-                )
-            }
-
-            // 두 번째 챗봇 질문
-            item {
-                BotMessageBubble(
-                    text = "다음 중 무엇을 도와드릴까요?",
-                    backgroundColor = Chat
-                )
-            }
-
-            // 추천 옵션 리스트 (Chip 형태)
-            item {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(start = 8.dp)
-                ) {
-                    SuggestionChipItem(text = "이 지역의 촬영지 1박 2일 코스 추천")
-                    SuggestionChipItem(text = "서울 벚꽃 명소 추천")
-                    SuggestionChipItem(text = "혼자서 걷는 코스 추천")
-                    SuggestionChipItem(text = "직접 장소 검색")
+            items(uiState.messages) { message ->
+                when (message) {
+                    is ChatMessage.User -> UserMessageBubble(message.text)
+                    is ChatMessage.Bot -> {
+                        BotMessageBubble(message.text)
+                        if (message.places.isNotEmpty()) {
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                text = "관련 촬영지",
+                                color = BodyText,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            message.places.forEach { place ->
+                                ChatPlaceCard(place, onClick = { onPlaceClick(place.placeId) })
+                                Spacer(Modifier.height(8.dp))
+                            }
+                        }
+                    }
                 }
             }
-
-            // 코스 추천하기 버튼
-            item {
-                Button(
-                    onClick = { /* 코스 추천 액션 */ },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp)
-                        .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent
-                    ),
-                    shape = RoundedCornerShape(25.dp),
-                    contentPadding = PaddingValues()
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .border(1.dp, Border, RoundedCornerShape(25.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "코스 추천하기",
-                            color = PrimaryBlue,
-                            fontWeight = FontWeight.Bold
-                        )
+            if (uiState.isLoading) {
+                item {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = PrimaryBlue)
+                        Spacer(Modifier.width(10.dp))
+                        Text("답변을 찾고 있어요…", color = SecondaryText, fontSize = 14.sp)
                     }
                 }
             }
@@ -139,110 +158,146 @@ fun AiChatbotScreen() {
 }
 
 @Composable
-fun BotMessageBubble(text: String, backgroundColor: Color) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Start
-    ) {
+private fun BotMessageBubble(text: String) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
         Box(
-            modifier = Modifier
-                .background(
-                    color = backgroundColor,
-                    shape = RoundedCornerShape(
-                        topStart = 16.dp,
-                        topEnd = 16.dp,
-                        bottomEnd = 16.dp,
-                        bottomStart = 4.dp // 말풍선 꼬리 디테일
-                    )
-                )
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+            Modifier.wrapContentWidth()
+                .widthIn(max = 340.dp)
+                .background(Chat, RoundedCornerShape(18.dp, 18.dp, 18.dp, 4.dp))
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
-            Text(
-                text = text,
-                color = BodyText,
-                fontSize = 15.sp
-            )
+            Text(text, color = BodyText, fontSize = 15.sp, lineHeight = 22.sp)
         }
     }
 }
 
 @Composable
-fun SuggestionChipItem(text: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, Border, RoundedCornerShape(20.dp))
-            .clickable { /* 옵션 클릭 액션 */ }
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            color = BodyText,
-            fontSize = 14.sp,
-            textAlign = TextAlign.Center
-        )
+private fun UserMessageBubble(text: String) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        Box(
+            Modifier.wrapContentWidth()
+                .widthIn(max = 340.dp)
+                .background(PrimaryBlue, RoundedCornerShape(18.dp, 18.dp, 4.dp, 18.dp))
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+        ) {
+            Text(text, color = Color.White, fontSize = 15.sp, lineHeight = 22.sp)
+        }
     }
 }
 
 @Composable
-fun ChatInputBar(
+private fun ChatPlaceCard(place: ChatPlace, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().height(116.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .border(1.dp, Border, RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .background(Color.White),
+    ) {
+        TourismImage(place.posterUrl, place.placeName, Modifier.width(112.dp).fillMaxSize())
+        Column(
+            modifier = Modifier.weight(1f).padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            Text(
+                place.placeName,
+                color = BodyText,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            place.workTitle?.takeIf(String::isNotBlank)?.let {
+                Text(it, color = PrimaryBlue, fontSize = 13.sp, maxLines = 1)
+            }
+            place.sceneDesc?.takeIf(String::isNotBlank)?.let {
+                Text(it, color = SecondaryText, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Spacer(Modifier.weight(1f))
+            val address = place.address?.takeIf(String::isNotBlank)
+                ?: listOfNotNull(place.sido, place.sigungu).joinToString(" ")
+            if (address.isNotBlank()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.LocationOn, null, tint = SecondaryText, modifier = Modifier.size(17.dp))
+                    Spacer(Modifier.width(3.dp))
+                    Text(address, color = SecondaryText, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChatInputBar(
     inputText: String,
+    enabled: Boolean,
     onInputChanged: (String) -> Unit,
-    onSendClicked: () -> Unit
+    onSendClicked: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier = Modifier.fillMaxWidth().background(Color.White)
+            .border(width = 1.dp, color = Border.copy(alpha = 0.7f))
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         OutlinedTextField(
             value = inputText,
             onValueChange = onInputChanged,
-            placeholder = {
-                Text(
-                    "원하는 여행을 입력해 주세요.",
-                    color = SecondaryText,
-                    fontSize = 14.sp
-                )
-            },
+            enabled = enabled,
+            placeholder = { Text("작품이나 촬영지를 물어보세요", color = SecondaryText, fontSize = 14.sp) },
             modifier = Modifier
                 .weight(1f)
-                .height(50.dp),
-            shape = RoundedCornerShape(25.dp),
+                .heightIn(min = 52.dp, max = 140.dp),
+            shape = RoundedCornerShape(26.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Color.Transparent,
                 unfocusedBorderColor = Color.Transparent,
-                focusedContainerColor = Color(0xFFF5F5F5),
-                unfocusedContainerColor = Chat
+                focusedContainerColor = Chat,
+                unfocusedContainerColor = Chat,
             ),
-            singleLine = true
+            singleLine = false,
+            minLines = 1,
+            maxLines = 5,
         )
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        // 전송 버튼 (플로팅 액션 버튼 스타일)
+        Spacer(Modifier.width(8.dp))
         IconButton(
             onClick = onSendClicked,
-            modifier = Modifier
-                .size(50.dp)
-                .background(PrimaryBlueDeep, CircleShape)
-                .clip(CircleShape)
+            enabled = enabled && inputText.isNotBlank(),
+            modifier = Modifier.size(48.dp).clip(CircleShape)
+                .background(if (enabled && inputText.isNotBlank()) PrimaryBlueDeep else Border),
         ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.Send,
-                contentDescription = "전송",
-                tint = Color.White,
-                modifier = Modifier.padding(start = 4.dp) // 화살표 시각적 중심 보정
-            )
+            Icon(Icons.AutoMirrored.Filled.Send, "전송", tint = Color.White)
         }
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, widthDp = 412, heightDp = 820)
 @Composable
-fun AiChatbotScreenPreview() {
-    AiChatbotScreen()
+private fun AiChatbotScreenPreview() {
+    ProjectTheme {
+        AiChatbotContent(
+            uiState = ChatUiState(
+                messages = listOf(
+                    ChatMessage.Bot("안녕하세요! 작품 촬영지와 여행 정보를 물어보세요."),
+                    ChatMessage.User("눈물의 여왕 촬영지 알려줘"),
+                    ChatMessage.Bot(
+                        text = "관련 촬영지 정보를 찾았습니다.",
+                        intent = "place_search",
+                        places = listOf(
+                            ChatPlace(
+                                placeId = "596",
+                                placeName = "여의도순복음교회",
+                                workTitle = "눈물의 여왕",
+                                address = "서울 영등포구 국회대로76길 68",
+                                sceneDesc = "촬영 장면 설명",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            onSendMessage = {},
+            onPlaceClick = {},
+            onErrorShown = {},
+        )
+    }
 }

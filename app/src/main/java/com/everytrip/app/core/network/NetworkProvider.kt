@@ -54,6 +54,13 @@ internal object NetworkProvider {
 
     fun <T> create(service: Class<T>): T = retrofit.create(service)
 
+    fun <T> create(service: Class<T>, baseUrl: String): T = Retrofit.Builder()
+        .baseUrl(normalizeBaseUrl(baseUrl))
+        .client(okHttpClient)
+        .addConverterFactory(GsonConverterFactory.create(gson))
+        .build()
+        .create(service)
+
     private fun normalizeBaseUrl(baseUrl: String): String {
         val trimmed = baseUrl.trim()
         require(trimmed.isNotBlank()) {

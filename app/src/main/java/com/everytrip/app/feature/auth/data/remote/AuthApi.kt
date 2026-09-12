@@ -31,8 +31,13 @@ class AuthApi private constructor(
         service.verifyEmailCode(EmailVerifyRequest(email, code))
     }
 
-    suspend fun signUp(email: String, password: String, nickname: String): SignUpResponse = execute {
-        service.signUp(SignUpRequest(email, password, nickname))
+    suspend fun signUp(
+        email: String,
+        password: String,
+        nickname: String,
+        profileImageUrl: String?,
+    ): SignUpResponse = execute {
+        service.signUp(SignUpRequest(email, password, nickname, profileImageUrl))
     }
 
     suspend fun login(email: String, password: String, deviceId: String): AuthSession = execute {

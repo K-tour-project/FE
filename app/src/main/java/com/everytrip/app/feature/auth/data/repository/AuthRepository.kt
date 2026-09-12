@@ -12,7 +12,12 @@ interface AuthRepository {
     fun getStoredRefreshToken(): String?
     suspend fun sendEmailCode(email: String): EmailCodeResponse
     suspend fun verifyEmailCode(email: String, code: String): EmailVerifyResponse
-    suspend fun signUp(email: String, password: String, nickname: String): SignUpResponse
+    suspend fun signUp(
+        email: String,
+        password: String,
+        nickname: String,
+        profileImageUrl: String?,
+    ): SignUpResponse
     suspend fun login(email: String, password: String): AuthSession
     suspend fun googleLogin(idToken: String): AuthSession
     suspend fun kakaoLogin(accessToken: String): AuthSession

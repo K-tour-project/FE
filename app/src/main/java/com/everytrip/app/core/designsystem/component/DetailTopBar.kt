@@ -39,8 +39,11 @@ fun DetailTopBar(
     selectedActionColor: Color = PrimaryBlue,
     actionContentDescription: String = "저장",
     selectedActionContentDescription: String = "저장 취소",
+    isActionSelected: Boolean? = null,
+    onActionClick: (() -> Unit)? = null,
 ) {
     var isSaved by rememberSaveable(title) { androidx.compose.runtime.mutableStateOf(false) }
+    val selected = isActionSelected ?: isSaved
 
     CenterAlignedTopAppBar(
         modifier = modifier.height(64.dp),
@@ -65,15 +68,17 @@ fun DetailTopBar(
             }
         },
         actions = {
-            IconButton(onClick = { isSaved = !isSaved }) {
+            IconButton(onClick = {
+                if (onActionClick != null) onActionClick() else isSaved = !isSaved
+            }) {
                 Icon(
-                    imageVector = if (isSaved) selectedActionIcon else actionIcon,
-                    contentDescription = if (isSaved) {
+                    imageVector = if (selected) selectedActionIcon else actionIcon,
+                    contentDescription = if (selected) {
                         selectedActionContentDescription
                     } else {
                         actionContentDescription
                     },
-                    tint = if (isSaved) selectedActionColor else NavyText,
+                    tint = if (selected) selectedActionColor else NavyText,
                     modifier = Modifier.size(32.dp),
                 )
             }
