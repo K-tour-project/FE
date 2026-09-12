@@ -24,7 +24,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
@@ -52,7 +51,6 @@ import com.everytrip.app.ui.theme.SecondaryText
 @Composable
 fun ArtworkSearchScreen(
     onCancelClick: () -> Unit = {},
-    onNotificationClick: () -> Unit = {},
     onRecentKeywordDeleteClick: (String) -> Unit = {},
     onClearRecentKeywordsClick: () -> Unit = {},
     onPopularKeywordClick: (String) -> Unit = {}
@@ -80,10 +78,6 @@ fun ArtworkSearchScreen(
     ) {
         MainTopBar(
             title = "Every Trip",
-            icon = Icons.Default.NotificationsNone,
-            iconContentDescription = "알림",
-            onIconClick = onNotificationClick,
-            showBadge = true
         )
 
         Spacer(modifier = Modifier.height(18.dp))

@@ -18,7 +18,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -30,12 +32,16 @@ import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.everytrip.app.core.designsystem.component.NetworkErrorDialog
+import com.everytrip.app.core.designsystem.component.AppBottomNavigationBar
+import com.everytrip.app.feature.artwork.presentation.search.ArtworkSearchScreen
 import com.everytrip.app.feature.auth.presentation.login.LoginScreen
 import com.everytrip.app.feature.auth.presentation.login.LoginViewModel
 import com.everytrip.app.feature.auth.presentation.login.SessionCheckState
 import com.everytrip.app.feature.auth.presentation.signup.SignUpScreen
 import com.everytrip.app.feature.auth.presentation.signup.SignUpViewModel
 import com.everytrip.app.feature.home.presentation.HomeScreen
+import com.everytrip.app.feature.chatbot.presentation.AiChatbotScreen
+import com.everytrip.app.feature.mypage.presentation.MyPageScreen
 import com.everytrip.app.feature.region.presentation.search.RegionSearchScreen
 import com.everytrip.app.feature.region.presentation.search.RegionSearchViewModel
 import com.everytrip.app.ui.theme.PrimaryBlue
@@ -133,21 +139,39 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    mainDestination == MainDestination.Home -> {
-                        HomeScreen(
-                            onNavigateToRegionSearch = {
-                                mainDestination = MainDestination.RegionSearch
-                            },
-                        )
-                    }
-
                     else -> {
-                        RegionSearchScreen(
-                            viewModel = regionSearchViewModel,
-                            onTitleClick = {
-                                mainDestination = MainDestination.Home
+                        Scaffold(
+                            bottomBar = {
+                                AppBottomNavigationBar(
+                                    selectedIndex = mainDestination.ordinal,
+                                    onItemSelected = { index ->
+                                        mainDestination = MainDestination.entries[index]
+                                    },
+                                )
                             },
-                        )
+                        ) { innerPadding ->
+                            Box(Modifier.fillMaxSize().padding(innerPadding)) {
+                                when (mainDestination) {
+                                    MainDestination.Home -> HomeScreen(
+                                        onNavigateToSearch = {
+                                            mainDestination = MainDestination.ArtworkSearch
+                                        },
+                                        onNavigateToRegionSearch = {
+                                            mainDestination = MainDestination.RegionSearch
+                                        },
+                                    )
+                                    MainDestination.Chatbot -> AiChatbotScreen()
+                                    MainDestination.ArtworkSearch -> ArtworkSearchScreen()
+                                    MainDestination.RegionSearch -> RegionSearchScreen(
+                                        viewModel = regionSearchViewModel,
+                                        onTitleClick = {
+                                            mainDestination = MainDestination.Home
+                                        },
+                                    )
+                                    MainDestination.MyPage -> MyPageScreen()
+                                }
+                            }
+                        }
                     }
 
                 }
@@ -204,6 +228,9 @@ class MainActivity : ComponentActivity() {
 
     private enum class MainDestination {
         Home,
+        Chatbot,
+        ArtworkSearch,
         RegionSearch,
+        MyPage,
     }
 }

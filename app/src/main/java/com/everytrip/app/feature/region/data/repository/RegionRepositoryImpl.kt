@@ -16,8 +16,7 @@ class RegionRepositoryImpl(
         regionId: Int,
         page: Int,
         size: Int,
-        productId: Int?,
-    ): TourismPage = regionApi.getTourismPlaces(regionId, page, size, productId)
+    ): TourismPage = regionApi.getTourismPlaces(regionId, page, size)
 
     override suspend fun getTourismDetail(contentId: String): TourismDetail =
         regionApi.getTourismDetail(contentId)

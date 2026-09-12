@@ -24,7 +24,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.LocalParking
@@ -37,7 +36,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -60,11 +58,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import androidx.core.text.HtmlCompat
-import com.everytrip.app.feature.region.data.model.ContentDetail
+import com.everytrip.app.core.designsystem.component.DetailTopBar
 import com.everytrip.app.feature.region.data.model.ContentSummary
 import com.everytrip.app.feature.region.data.model.categoryLabel
-import com.everytrip.app.feature.region.data.model.isDrama
-import com.everytrip.app.feature.region.data.model.isMovie
 import com.everytrip.app.feature.region.data.model.PlaceDetail
 import com.everytrip.app.feature.region.data.model.PlaceTourDetail
 import com.everytrip.app.feature.region.data.model.RelatedPlace
@@ -72,6 +68,7 @@ import com.everytrip.app.feature.region.data.model.RegionLocation
 import com.everytrip.app.feature.region.data.model.TourismDetail
 import com.everytrip.app.feature.region.presentation.search.RegionSearchUiState
 import com.everytrip.app.feature.region.presentation.search.TourismImage
+import com.everytrip.app.feature.artwork.presentation.detail.ArtworkDetailScreen
 import com.everytrip.app.ui.theme.BodyText
 import com.everytrip.app.ui.theme.Border
 import com.everytrip.app.ui.theme.NavyText
@@ -86,6 +83,7 @@ fun RegionDetailScreen(
     onClose: () -> Unit,
     onRetry: () -> Unit,
     onContentClick: (Int) -> Unit,
+    onFilmingPlaceClick: (Int) -> Unit,
     onRelatedPlaceClick: (String) -> Unit,
 ) {
     key(state.selectedContentId, state.selectedPlaceId, state.selectedProductId) {
@@ -116,8 +114,20 @@ fun RegionDetailScreen(
                         detail = state.placeDetail,
                         onClose = onClose,
                         onContentClick = onContentClick,
+                        onRelatedPlaceClick = onRelatedPlaceClick,
                     )
-                    state.contentDetail != null -> ContentDetailContent(state.contentDetail, onClose)
+                    state.contentDetail != null -> ArtworkDetailScreen(
+                        content = state.contentDetail,
+                        onBackClick = onClose,
+                        onFilmingLocationClick = { location ->
+                            location.detailPath.substringAfterLast('/').toIntOrNull()
+                                ?.let(onFilmingPlaceClick)
+                        },
+                        onRelatedProductClick = { product ->
+                            product.detailPath.substringAfterLast('/').toIntOrNull()
+                                ?.let(onContentClick)
+                        },
+                    )
                 }
             }
         }
@@ -133,7 +143,7 @@ private fun FilmingPlaceContent(
 ) {
     val tour = place.detail
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        DetailHeader(place.name, onClose)
+        DetailTopBar(place.name, onClose)
         ImageCarousel(tour?.images.orEmpty(), tour?.imageCount ?: 0, place.name)
         Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -157,9 +167,10 @@ private fun TourismPlaceContent(
     detail: TourismDetail,
     onClose: () -> Unit,
     onContentClick: (Int) -> Unit,
+    onRelatedPlaceClick: (String) -> Unit,
 ) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        DetailHeader(detail.name, onClose)
+        DetailTopBar(detail.name, onClose)
         ImageCarousel(detail.images, detail.imageCount, detail.name)
         Column(Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -172,24 +183,9 @@ private fun TourismPlaceContent(
             )
             FacilityCard(detail.petAllowed, detail.parking, detail.useTime)
             ContentCarousel(detail.contents, onContentClick)
+            RelatedPlaceCarousel(detail.relatedPlaces, onRelatedPlaceClick)
             Spacer(Modifier.height(24.dp))
         }
-    }
-}
-
-@Composable
-private fun DetailHeader(title: String, onClose: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "상세 닫기", tint = NavyText) }
-        Text(
-            title, Modifier.weight(1f), color = NavyText,
-            style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold,
-            maxLines = 1, overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(Modifier.size(48.dp))
     }
 }
 
@@ -246,7 +242,12 @@ private fun BodyDescription(value: String) {
 
 @Composable
 private fun SectionTitle(title: String) {
-    Text(title, color = NavyText, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+    Text(
+        title,
+        color = NavyText,
+        style = MaterialTheme.typography.titleLarge,
+        fontWeight = FontWeight.Bold
+    )
 }
 
 @Composable
@@ -316,7 +317,7 @@ private fun Facility(icon: ImageVector, value: String?, modifier: Modifier) {
     Column(modifier.padding(horizontal = 8.dp), horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(7.dp)) {
         Icon(icon, null, tint = PrimaryBlue, modifier = Modifier.size(30.dp))
-        Text(value?.takeIf { it.isNotBlank() } ?: "정보 없음", color = NavyText,
+        Text(value?.takeIf { it.isNotBlank() } ?: "정보 없음", color = NavyText, fontWeight = FontWeight.SemiBold,
             style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }
@@ -350,54 +351,21 @@ private fun RelatedPlaceCarousel(places: List<RelatedPlace>, onClick: (String) -
     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         items(places, key = { it.relatedId }) { place ->
             Card(
-                Modifier.width(210.dp).height(112.dp).clickable { onClick(place.contentId) },
+                Modifier.width(192.dp).height(98.dp).clickable { onClick(place.contentId) },
                 shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(Color.White),
                 border = androidx.compose.foundation.BorderStroke(1.dp, Border),
                 elevation = CardDefaults.cardElevation(2.dp),
             ) {
                 Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.Center) {
                     Text(place.name, color = NavyText, style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        fontSize = 18.sp)
                     Spacer(Modifier.height(8.dp))
-                    Text(listOfNotNull(place.sidoName, place.sigunguName).joinToString(" · "),
+                    Text(listOfNotNull(place.sidoName, place.sigunguName).joinToString(" "),
                         color = SecondaryText, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ContentDetailContent(content: ContentDetail, onClose: () -> Unit) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        DetailHeader(content.title, onClose)
-        TourismImage(content.posterUrl, content.title,
-            Modifier.fillMaxWidth().height(360.dp).padding(horizontal = 20.dp).clip(RoundedCornerShape(18.dp)))
-        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            content.overview?.let { BodyDescription(it) }
-            DetailText("구분", content.categoryLabel)
-            DetailText("공개일", content.firstAirDate)
-            DetailText("장르", content.genres?.replace("|", " · "))
-            if (content.isMovie()) {
-                DetailText("상영 시간", content.runtime?.let { "${it}분" })
-            }
-            if (content.isDrama()) {
-                DetailText("작품 유형", content.productType)
-                DetailText("방송사", content.networks)
-                DetailText("회차", content.episodeCount?.let { "${it}부작" })
-                DetailText("주연", content.leadActors?.replace("|", " · "))
-            }
-            DetailText("평점", content.rating?.toString())
-            DetailText("인기도", content.popularity?.toString())
-        }
-    }
-}
-
-@Composable
-private fun DetailText(label: String, value: String?) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(label, color = NavyText, fontWeight = FontWeight.Bold)
-        Text(value?.takeIf { it.isNotBlank() } ?: "정보 없음", color = BodyText)
     }
 }
 

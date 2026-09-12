@@ -66,6 +66,7 @@ data class TourismDetail(
     val parking: String? = null,
     val petAllowed: String? = null,
     val contents: List<ContentSummary> = emptyList(),
+    val relatedPlaces: List<RelatedPlace> = emptyList(),
 )
 
 data class ContentSummary(
@@ -91,6 +92,16 @@ data class ContentDetail(
     val rating: Double?,
     val popularity: Double?,
     val leadActors: String?,
+    val filmingLocations: List<FilmingLocation> = emptyList(),
+    val relatedProducts: List<ContentSummary> = emptyList(),
+)
+
+data class FilmingLocation(
+    val placeId: Int,
+    val name: String,
+    val sidoName: String?,
+    val sigunguName: String?,
+    val detailPath: String,
 )
 
 val ContentSummary.categoryLabel: String

@@ -1,12 +1,14 @@
 package com.everytrip.app.core.designsystem.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -26,11 +28,12 @@ import com.everytrip.app.ui.theme.PrimaryBlue
 @Composable
 fun MainTopBar(
     title: String,
-    icon: ImageVector,
-    iconContentDescription: String,
-    onIconClick: () -> Unit,
+    icon: ImageVector? = null,
+    iconContentDescription: String? = null,
+    onIconClick: () -> Unit = {},
     onTitleClick: () -> Unit = {},
-    showBadge: Boolean = false
+    showBadge: Boolean = false,
+    showActionBorder: Boolean = false,
 ) {
     TopAppBar(
         modifier = Modifier.height(80.dp),
@@ -44,8 +47,19 @@ fun MainTopBar(
             )
         },
         actions = {
-            Box {
-                IconButton(onClick = onIconClick) {
+            if (icon != null) Box {
+                IconButton(
+                    onClick = onIconClick,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .then(
+                            if (showActionBorder) Modifier.border(
+                                width = 1.dp,
+                                color = PrimaryBlue,
+                                shape = RoundedCornerShape(14.dp),
+                            ) else Modifier
+                        ),
+                ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = iconContentDescription,

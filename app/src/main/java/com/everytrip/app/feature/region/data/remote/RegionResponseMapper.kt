@@ -10,6 +10,7 @@ import com.everytrip.app.feature.region.data.model.TourismPage
 import com.everytrip.app.feature.region.data.model.TourismPlace
 import com.everytrip.app.feature.region.data.model.ContentDetail
 import com.everytrip.app.feature.region.data.model.ContentSummary
+import com.everytrip.app.feature.region.data.model.FilmingLocation
 import com.everytrip.app.feature.region.data.model.PlaceDetail
 import com.everytrip.app.feature.region.data.model.PlaceTourDetail
 import com.everytrip.app.feature.region.data.model.RelatedPlace
@@ -81,6 +82,9 @@ internal object RegionResponseMapper {
             contents = root.arrayValue("contents")
                 ?.map { it.requireObject("Content summary").toContentSummary() }
                 .orEmpty(),
+            relatedPlaces = root.arrayValue("related_places")
+                ?.map { it.requireObject("Related place").toRelatedPlace() }
+                .orEmpty(),
         )
     }
 
@@ -111,23 +115,38 @@ internal object RegionResponseMapper {
 
     fun toContentDetail(json: JsonElement): ContentDetail {
         val root = json.requireObject("Content detail")
+        val product = root.objectValue("product") ?: root
         return ContentDetail(
-            productId = root.requiredInt("product_id"),
-            title = root.requiredString("title"),
-            overview = root.nonBlankString("overview"),
-            firstAirDate = root.nonBlankString("first_air_date"),
-            category = root.requiredString("category"),
-            productType = root.nonBlankString("product_type"),
-            runtime = root.intValue("runtime"),
-            posterUrl = root.nonBlankString("poster_url"),
-            genres = root.nonBlankString("genres"),
-            networks = root.nonBlankString("networks"),
-            episodeCount = root.intValue("episode_count"),
-            rating = root.doubleValue("rating"),
-            popularity = root.doubleValue("popularity"),
-            leadActors = root.nonBlankString("lead_actors"),
+            productId = product.requiredInt("product_id"),
+            title = product.requiredString("title"),
+            overview = product.nonBlankString("overview"),
+            firstAirDate = product.nonBlankString("first_air_date"),
+            category = product.requiredString("category"),
+            productType = product.nonBlankString("product_type"),
+            runtime = product.intValue("runtime"),
+            posterUrl = product.nonBlankString("poster_url"),
+            genres = product.nonBlankString("genres"),
+            networks = product.nonBlankString("networks"),
+            episodeCount = product.intValue("episode_count"),
+            rating = product.doubleValue("rating"),
+            popularity = product.doubleValue("popularity"),
+            leadActors = product.nonBlankString("lead_actors"),
+            filmingLocations = product.arrayValue("filming_locations")
+                ?.map { it.requireObject("Filming location").toFilmingLocation() }
+                .orEmpty(),
+            relatedProducts = product.arrayValue("related_products")
+                ?.map { it.requireObject("Related product").toContentSummary() }
+                .orEmpty(),
         )
     }
+
+    private fun JsonObject.toFilmingLocation() = FilmingLocation(
+        placeId = requiredInt("place_id"),
+        name = requiredString("name"),
+        sidoName = nonBlankString("sido_name"),
+        sigunguName = nonBlankString("sigungu_name"),
+        detailPath = requiredString("detail_path"),
+    )
 
     private fun JsonObject.toContentSummary() = ContentSummary(
         productId = requiredInt("product_id"),

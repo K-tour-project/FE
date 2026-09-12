@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material3.Text
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -78,11 +76,7 @@ fun RegionSearchScreen(
     ) {
         MainTopBar(
             title = "Every Trip",
-            icon = Icons.Default.NotificationsNone,
-            iconContentDescription = "알림",
-            onIconClick = { /* 알림 클릭 */ },
             onTitleClick = onTitleClick,
-            showBadge = true
         )
 
         RegionFilterBar(
@@ -153,6 +147,7 @@ fun RegionSearchScreen(
                     ?: uiState.selectedContentId?.let(viewModel::selectRelatedPlace)
             },
             onContentClick = viewModel::selectContent,
+            onFilmingPlaceClick = viewModel::selectFilmingPlace,
             onRelatedPlaceClick = viewModel::selectRelatedPlace,
         )
     }

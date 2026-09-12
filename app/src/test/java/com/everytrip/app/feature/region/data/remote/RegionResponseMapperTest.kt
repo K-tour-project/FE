@@ -109,6 +109,24 @@ class RegionResponseMapperTest {
     }
 
     @Test
+    fun `tourism detail maps related places`() {
+        val result = RegionResponseMapper.toTourismDetail(JsonParser.parseString(
+            """{
+              "content_id":"126121","name":"관광지","images":[],
+              "related_places":[{
+                "related_id":"r1","content_id":"654321","name":"연관 관광지",
+                "sido_name":"경기도","sigungu_name":"수원시",
+                "detail_path":"/tourism-places/654321"
+              }]
+            }""".trimIndent(),
+        ))
+
+        assertEquals(1, result.relatedPlaces.size)
+        assertEquals("654321", result.relatedPlaces.single().contentId)
+        assertEquals("/tourism-places/654321", result.relatedPlaces.single().detailPath)
+    }
+
+    @Test
     fun `place detail maps nullable tour detail and navigation summaries`() {
         val result = RegionResponseMapper.toPlaceDetail(JsonParser.parseString(
             """{
@@ -159,5 +177,29 @@ class RegionResponseMapperTest {
         assertEquals(null, result.networks)
         assertEquals(null, result.episodeCount)
         assertEquals(null, result.leadActors)
+    }
+
+    @Test
+    fun `wrapped content detail maps filming locations and related products`() {
+        val result = RegionResponseMapper.toContentDetail(JsonParser.parseString(
+            """{
+              "product": {
+                "product_id":139,"title":"기생충","category":"MOVIE","runtime":132,
+                "filming_locations":[{
+                  "place_id":434,"name":"경복궁","sido_name":"서울특별시",
+                  "sigungu_name":"종로구","detail_path":"/places/434"
+                }],
+                "related_products":[{
+                  "product_id":140,"title":"관련 작품","category":"DRAMA",
+                  "poster_url":null,"detail_path":"/contents/140"
+                }]
+              }
+            }""".trimIndent(),
+        ))
+
+        assertEquals(434, result.filmingLocations.single().placeId)
+        assertEquals("/places/434", result.filmingLocations.single().detailPath)
+        assertEquals(140, result.relatedProducts.single().productId)
+        assertEquals("/contents/140", result.relatedProducts.single().detailPath)
     }
 }

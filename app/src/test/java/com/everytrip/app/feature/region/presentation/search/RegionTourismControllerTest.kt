@@ -94,17 +94,18 @@ class RegionTourismControllerTest {
         assertEquals(1, repository.details.size)
     }
 
-    @Test fun filmingPlaceUsesFirstPlaceIdInsteadOfContentId() {
+    @Test fun tourismListFilmingPlaceUsesContentIdAndIgnoresPlaceIds() {
         state.value = state.value.copy(
-            places = listOf(TourismPlace("126121", "촬영지", null, null, null, null,
-                "촬영지", placeIds = listOf(321, 322))),
+            places = listOf(TourismPlace("126508", "경복궁", null, null, null, null,
+                "촬영지", placeIds = listOf(434, 454, 614))),
         )
 
-        controller.selectPlace("126121")
+        controller.selectPlace("126508")
 
-        assertEquals(listOf(321), repository.placeDetailIds)
-        assertTrue(repository.details.isEmpty())
-        assertEquals(321, state.value.selectedPlaceId)
+        assertEquals("126508", repository.details.single().first)
+        assertTrue(repository.placeDetailIds.isEmpty())
+        assertEquals("126508", state.value.selectedContentId)
+        assertNull(state.value.selectedPlaceId)
     }
 
     @Test fun oldDetailCannotReplaceNewSelectionOrReopenClosedPanel() {
@@ -152,7 +153,6 @@ class RegionTourismControllerTest {
             regionId: Int,
             page: Int,
             size: Int,
-            productId: Int?,
         ): TourismPage {
             val request = PageRequest(Triple(regionId, page, size))
             pages += request

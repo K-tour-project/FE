@@ -7,6 +7,7 @@ val PrimaryBlue = Color(0xFF1D72F8)
 val PrimaryBlueDeep = Color(0xFF0869FC)
 val Chat = Color(0xFFEEEEEE)
 val IconGray = Color(0xFF8A96A8)
+val FavoritePink = Color(0xFFFF5C6C)
 
 val NavyText = Color(0xFF102A54)
 val BodyText = Color(0xFF2C3E55)

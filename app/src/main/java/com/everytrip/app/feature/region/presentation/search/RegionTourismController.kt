@@ -55,11 +55,7 @@ internal class RegionTourismController(
 
     fun selectPlace(contentId: String) {
         val place = _uiState.value.places.firstOrNull { it.contentId == contentId } ?: return
-        if (place.category == FILMING_PLACE_CATEGORY && place.placeIds.isNotEmpty()) {
-            selectFilmingPlace(place.placeIds.first())
-        } else {
-            selectRelatedPlace(place.contentId)
-        }
+        selectRelatedPlace(place.contentId)
     }
 
     fun selectRelatedPlace(contentId: String) {
@@ -134,10 +130,6 @@ internal class RegionTourismController(
             selectedProductId = null, placeDetail = null, filmingPlaceDetail = null,
             contentDetail = null,
             isLoadingDetail = false, detailErrorMessage = null) }
-    }
-
-    private companion object {
-        const val FILMING_PLACE_CATEGORY = "촬영지"
     }
 
 }

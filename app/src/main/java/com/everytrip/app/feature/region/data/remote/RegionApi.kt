@@ -31,10 +31,9 @@ class RegionApi private constructor(
         regionId: Int,
         page: Int,
         size: Int,
-        productId: Int? = null,
     ): TourismPage = execute {
         RegionResponseMapper.toTourismPage(
-            service.getTourismPlaces(regionId, page, size, productId),
+            service.getTourismPlaces(regionId, page, size),
         )
     }
 

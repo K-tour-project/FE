@@ -15,7 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.outlined.NearMe
 import androidx.compose.material3.*
@@ -71,10 +70,6 @@ fun HomeScreen(
         topBar = {
             MainTopBar(
                 title = "Every Trip",
-                icon = Icons.Default.NotificationsNone,
-                iconContentDescription = "알림",
-                onIconClick = { /* 알림 클릭 */ },
-                showBadge = true
             )
         },
         containerColor = BackgroundGray

@@ -140,20 +140,21 @@ fun RegionKakaoMap(
         (markerBitmaps.keys - ids).forEach(markerBitmaps::remove)
 
         placesWithLocation.forEach { place ->
-            val bitmap = markerBitmaps[place.contentId] ?: return@forEach
-            if (appliedMarkerBitmaps[place.contentId] !== bitmap) {
-                placeLabels.remove(place.contentId)?.let(layer::remove)
-                placeLabels[place.contentId] = layer.addLabel(
-                    LabelOptions.from("tourism-${place.contentId}", place.location!!.toLatLng())
+            val contentId = place.contentId
+            val bitmap = markerBitmaps[contentId] ?: return@forEach
+            if (appliedMarkerBitmaps[contentId] !== bitmap) {
+                placeLabels.remove(contentId)?.let(layer::remove)
+                placeLabels[contentId] = layer.addLabel(
+                    LabelOptions.from("tourism-$contentId", place.location!!.toLatLng())
                         .setStyles(
                             LabelStyles.from(
                                 LabelStyle.from(bitmap).setAnchorPoint(0.5f, MARKER_ANCHOR_Y),
                             ),
                         )
                         .setClickable(true)
-                        .setTag(place.contentId),
+                        .setTag(contentId),
                 )
-                appliedMarkerBitmaps[place.contentId] = bitmap
+                appliedMarkerBitmaps[contentId] = bitmap
             }
         }
     }

@@ -16,7 +16,6 @@ interface RegionRepository {
         regionId: Int,
         page: Int,
         size: Int = 20,
-        productId: Int? = null,
     ): TourismPage
     suspend fun getTourismDetail(contentId: String): TourismDetail
     suspend fun getPlaceDetail(placeId: Int): PlaceDetail =

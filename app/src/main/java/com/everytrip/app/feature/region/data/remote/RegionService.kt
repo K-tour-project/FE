@@ -15,12 +15,11 @@ internal interface RegionService {
     @GET("regions/{regionId}/boundary")
     suspend fun getBoundary(@Path("regionId") regionId: Int): JsonElement
 
-    @GET("regions/{regionId}/places")
+    @GET("regions/{regionId}/tourism-places")
     suspend fun getTourismPlaces(
         @Path("regionId") regionId: Int,
         @Query("page") page: Int,
         @Query("size") size: Int,
-        @Query("content_id") productId: Int? = null,
     ): JsonElement
 
     @GET("tourism-places/{contentId}")
@@ -32,6 +31,4 @@ internal interface RegionService {
     @GET("contents/{productId}")
     suspend fun getContentDetail(@Path("productId") productId: Int): JsonElement
 
-    @GET("contents/{productId}/places")
-    suspend fun getContentPlaces(@Path("productId") productId: Int): JsonElement
 }
