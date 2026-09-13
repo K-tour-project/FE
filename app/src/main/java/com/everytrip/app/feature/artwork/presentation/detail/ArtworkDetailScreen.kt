@@ -24,8 +24,6 @@ import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.LiveTv
 import androidx.compose.material.icons.outlined.StarOutline
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -55,7 +53,6 @@ import com.everytrip.app.feature.region.data.model.isMovie
 import com.everytrip.app.feature.region.presentation.search.TourismImage
 import com.everytrip.app.ui.theme.BodyText
 import com.everytrip.app.ui.theme.Border
-import com.everytrip.app.ui.theme.FavoritePink
 import com.everytrip.app.ui.theme.NavyText
 import com.everytrip.app.ui.theme.PrimaryBlue
 import com.everytrip.app.ui.theme.ProjectTheme
@@ -76,11 +73,6 @@ fun ArtworkDetailScreen(
             title = "Every Trip",
             onBackClick = onBackClick,
             titleColor = PrimaryBlue,
-            actionIcon = Icons.Outlined.FavoriteBorder,
-            selectedActionIcon = Icons.Filled.Favorite,
-            selectedActionColor = FavoritePink,
-            actionContentDescription = "좋아요",
-            selectedActionContentDescription = "좋아요 취소",
             isActionSelected = isSaved,
             onActionClick = onSaveClick,
         )

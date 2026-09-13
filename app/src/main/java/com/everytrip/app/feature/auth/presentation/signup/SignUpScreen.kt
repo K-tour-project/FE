@@ -28,7 +28,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.VerifiedUser
@@ -66,8 +65,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.everytrip.app.core.designsystem.component.AppTextField
 import com.everytrip.app.core.designsystem.component.AppTopBar
+import com.everytrip.app.core.designsystem.component.DefaultProfileImage
 import com.everytrip.app.core.designsystem.component.GradientButton
 import com.everytrip.app.core.designsystem.component.PasswordTextField
+import com.everytrip.app.core.designsystem.modifier.dismissKeyboardOnTap
 import com.everytrip.app.ui.theme.NavyText
 import com.everytrip.app.ui.theme.PrimaryBlue
 import com.everytrip.app.ui.theme.SecondaryText
@@ -133,6 +134,7 @@ fun SignUpScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .dismissKeyboardOnTap()
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp),
@@ -336,7 +338,7 @@ private fun ProfilePhotoPicker(
                             showSourceDialog = false
                             galleryLauncher.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
                         },
-                    ) { Text("갤러리에서 선택") }
+                    ) { Text("이미지 선택") }
                 }
             },
             confirmButton = {},
@@ -357,24 +359,22 @@ private fun ProfilePhotoPicker(
             Box(
                 modifier = Modifier
                     .size(88.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFF3F7FF))
-                    .border(1.5.dp, PrimaryBlue, CircleShape),
+                    .clip(CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
                 if (selectedBitmap != null) {
                     Image(
                         bitmap = selectedBitmap!!,
                         contentDescription = "선택한 프로필 사진",
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .border(1.5.dp, PrimaryBlue, CircleShape),
                         contentScale = ContentScale.Crop,
                     )
                 } else {
-                    Icon(
-                        imageVector = Icons.Filled.Person,
-                        contentDescription = null,
-                        modifier = Modifier.size(56.dp),
-                        tint = Color(0xFF9DBEFF),
+                    DefaultProfileImage(
+                        modifier = Modifier.fillMaxSize(),
+                        contentDescription = "기본 프로필 이미지",
                     )
                 }
             }

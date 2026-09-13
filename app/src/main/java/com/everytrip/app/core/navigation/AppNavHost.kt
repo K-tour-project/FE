@@ -54,6 +54,7 @@ fun AppNavHost(
     val loginUiState by loginViewModel.uiState.collectAsState()
     val signUpUiState by signUpViewModel.uiState.collectAsState()
     val favoriteUiState by favoriteViewModel.uiState.collectAsState()
+    val regionUiState by regionSearchViewModel.uiState.collectAsState()
     var isGuestMode by remember { mutableStateOf(false) }
 
     LaunchedEffect(signUpUiState.signupCompleted) {
@@ -99,10 +100,12 @@ fun AppNavHost(
             val currentRoute = backStackEntry?.destination?.route
             val selectedBottomIndex = AppRoute.bottomRoutes.indexOfFirst { it.route == currentRoute }
             val isImeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+            val isInitialPlacesError = currentRoute == AppRoute.RegionSearch.route &&
+                regionUiState.places.isEmpty() && regionUiState.placesErrorMessage != null
 
             Scaffold(
                 bottomBar = {
-                    if (selectedBottomIndex >= 0 && !isImeVisible) {
+                    if (selectedBottomIndex >= 0 && !isImeVisible && !isInitialPlacesError) {
                         AppBottomNavigationBar(
                             selectedIndex = selectedBottomIndex,
                             onItemSelected = { index ->
@@ -155,13 +158,37 @@ fun AppNavHost(
                         RegionSearchScreen(
                             viewModel = regionSearchViewModel,
                             onTitleClick = { navController.navigateBottom(AppRoute.Home) },
+                            onBackClick = {
+                                if (!navController.popBackStack()) {
+                                    navController.navigateBottom(AppRoute.Home)
+                                }
+                            },
                             favoriteState = favoriteUiState,
                             onTogglePlace = favoriteViewModel::togglePlace,
                             onToggleTourism = favoriteViewModel::toggleTourism,
                             onToggleProduct = favoriteViewModel::toggleProduct,
                         )
                     }
-                    composable(AppRoute.MyPage.route) { MyPageRoute(favoriteViewModel) }
+                    composable(AppRoute.MyPage.route) {
+                        MyPageRoute(
+                            viewModel = favoriteViewModel,
+                            onPlaceClick = { detailPath ->
+                                val id = detailPath.substringAfterLast('/').takeIf(String::isNotBlank)
+                                when {
+                                    detailPath.startsWith("/places/") -> id?.toIntOrNull()
+                                        ?.let(regionSearchViewModel::selectFilmingPlace)
+                                    detailPath.startsWith("/tourism-places/") -> id
+                                        ?.let(regionSearchViewModel::selectRelatedPlace)
+                                }
+                                navController.navigateBottom(AppRoute.RegionSearch)
+                            },
+                            onWorkClick = { detailPath ->
+                                detailPath.substringAfterLast('/').toIntOrNull()
+                                    ?.let(regionSearchViewModel::selectContent)
+                                navController.navigateBottom(AppRoute.RegionSearch)
+                            },
+                        )
+                    }
                 }
             }
         }

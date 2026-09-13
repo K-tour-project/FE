@@ -50,6 +50,7 @@ import com.everytrip.app.core.designsystem.component.AppTextField
 import com.everytrip.app.core.designsystem.component.AppTopBar
 import com.everytrip.app.core.designsystem.component.GradientButton
 import com.everytrip.app.core.designsystem.component.PasswordTextField
+import com.everytrip.app.core.designsystem.modifier.dismissKeyboardOnTap
 import com.everytrip.app.ui.theme.BodyText
 import com.everytrip.app.ui.theme.NavyText
 import com.everytrip.app.ui.theme.PrimaryBlue
@@ -91,6 +92,7 @@ fun LoginScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .dismissKeyboardOnTap()
                 .padding(paddingValues)
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,

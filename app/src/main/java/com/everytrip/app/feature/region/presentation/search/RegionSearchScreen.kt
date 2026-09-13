@@ -27,7 +27,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.everytrip.app.core.designsystem.component.MainTopBar
-import com.everytrip.app.feature.mypage.presentation.FavoriteUiState
+import com.everytrip.app.core.designsystem.component.ApiErrorScreen
+import com.everytrip.app.feature.mypage.presentation.MyPageUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,7 +36,8 @@ fun RegionSearchScreen(
     modifier: Modifier = Modifier,
     viewModel: RegionSearchViewModel,
     onTitleClick: () -> Unit = {},
-    favoriteState: FavoriteUiState = FavoriteUiState(),
+    onBackClick: () -> Unit = {},
+    favoriteState: MyPageUiState = MyPageUiState(),
     onTogglePlace: (Int) -> Unit = {},
     onToggleTourism: (String) -> Unit = {},
     onToggleProduct: (Int) -> Unit = {},
@@ -72,6 +74,15 @@ fun RegionSearchScreen(
         if (uiState.selectedRegionId != null) {
             bottomSheetState.partialExpand()
         }
+    }
+
+    if (uiState.places.isEmpty() && uiState.placesErrorMessage != null) {
+        ApiErrorScreen(
+            onRetryClick = viewModel::loadMorePlaces,
+            onBackClick = onBackClick,
+            modifier = modifier.background(Color.White),
+        )
+        return
     }
 
     Column(

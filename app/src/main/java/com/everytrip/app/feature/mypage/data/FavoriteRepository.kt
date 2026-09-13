@@ -28,14 +28,28 @@ class FavoriteRepository(context: Context) {
         if (saved) service.saveProduct(id, it) else service.unsaveProduct(id, it)
     }.toMutation()
 
-    suspend fun getMyPage(limit: Int = 20, offset: Int = 0): MyPageData =
-        authenticated { service.myPage(limit, offset, it) }.toMyPage()
+    suspend fun getMyPage(limit: Int = 20, offset: Int = 0): MyPageData {
+        validatePage(limit, offset)
+        return authenticated { service.myPage(limit, offset, it) }.toMyPage()
+    }
 
-    suspend fun getSavedProducts(limit: Int = 20, offset: Int = 0): List<SavedProductData> =
-        authenticated { service.savedProducts(limit, offset, it) }.items("saved_products", "items")
+    suspend fun getFavoritePlaces(limit: Int = 20, offset: Int = 0): List<FavoritePlaceData> {
+        validatePage(limit, offset)
+        return authenticated { service.favoritePlaces(limit, offset, it) }.items("favorite_places", "items")
+            .mapNotNull { it.asObjectOrNull()?.toFavoritePlace() }
+    }
+
+    suspend fun getSavedProducts(limit: Int = 20, offset: Int = 0): List<SavedProductData> {
+        validatePage(limit, offset)
+        return authenticated { service.savedProducts(limit, offset, it) }.items("saved_products", "items")
             .mapNotNull { it.asObjectOrNull()?.toSavedProduct() }
+    }
 
-    private suspend fun authenticated(block: suspend (AuthToken) -> JsonElement): JsonElement =
+    suspend fun updateProfileImage(profileImageUrl: String?) = authenticated {
+        service.updateProfile(ProfileImageRequest(profileImageUrl), it)
+    }
+
+    private suspend fun <T> authenticated(block: suspend (AuthToken) -> T): T =
         session.executeAuthenticated { token ->
             try {
                 block(AuthToken(token))
@@ -43,6 +57,11 @@ class FavoriteRepository(context: Context) {
                 throw AuthHttpException(error.code(), error.response()?.errorBody()?.string().orEmpty())
             }
         }
+
+    private fun validatePage(limit: Int, offset: Int) {
+        require(limit in 1..50) { "limit must be between 1 and 50." }
+        require(offset >= 0) { "offset must be at least 0." }
+    }
 
     private fun JsonElement.toMutation(): FavoriteMutation {
         val value = asObjectOrNull() ?: JsonObject()
@@ -59,40 +78,59 @@ class FavoriteRepository(context: Context) {
         val profile = root.obj("user") ?: root.obj("profile") ?: root
         return MyPageData(
             nickname = profile.string("nickname"),
+            email = profile.string("email"),
             profileImageUrl = profile.stringOrNull("profile_image_url"),
-            favoritePlaceCount = root.int("favorite_place_count", "favorite_count"),
-            savedProductCount = root.int("saved_product_count"),
+            favoritePlaceCount = root.obj("counts")?.int("favorite_place_count")
+                ?: root.int("favorite_place_count", "favorite_count"),
+            savedProductCount = root.obj("counts")?.int("saved_product_count")
+                ?: root.int("saved_product_count"),
             favoritePlaces = root.items("favorite_places", "favorites", "items")
                 .mapNotNull { it.asObjectOrNull()?.toFavoritePlace() },
         )
     }
 
-    private fun JsonObject.toFavoritePlace() = FavoritePlaceData(
-        favoriteId = longOrNull("favorite_id") ?: return null,
-        placeId = intOrNull("place_id"),
-        contentId = stringOrNull("content_id"),
-        name = string("name", "place_name", "title"),
-        description = string("overview", "description", "scene_desc"),
-        address = string("address", "road_address"),
-        imageUrl = stringOrNull("thumbnail_url", "image_url", "poster_url"),
-        detailPath = string("detail_path"),
-    )
+    private fun JsonObject.toFavoritePlace(): FavoritePlaceData? {
+        val value = obj("place") ?: obj("tourism") ?: obj("favorite_place") ?: this
+        return FavoritePlaceData(
+            favoriteId = longOrNull("favorite_id") ?: return null,
+            placeId = intOrNull("place_id") ?: value.intOrNull("place_id") ?: value.intOrNull("id"),
+            contentId = stringOrNull("content_id") ?: value.stringOrNull("content_id"),
+            name = value.string("name", "place_name", "title"),
+            description = value.string("overview", "description", "scene_desc"),
+            address = value.string("address", "road_address", "addr1"),
+            imageUrl = value.stringOrNull("thumbnail_url", "image_url", "poster_url", "first_image"),
+            detailPath = value.string("detail_path"),
+        )
+    }
 
-    private fun JsonObject.toSavedProduct() = SavedProductData(
-        productId = intOrNull("product_id") ?: return null,
-        title = string("title"),
-        category = string("category"),
-        year = string("first_air_date", "year").take(4),
-        overview = string("overview"),
-        locationSummary = string("filming_location_summary", "place_summary", "locations"),
-        posterUrl = stringOrNull("poster_url"),
-        detailPath = string("detail_path"),
-    )
+    private fun JsonObject.toSavedProduct(): SavedProductData? {
+        val value = obj("product") ?: obj("content") ?: this
+        return SavedProductData(
+            productId = intOrNull("product_id") ?: value.intOrNull("product_id")
+                ?: value.intOrNull("id") ?: return null,
+            title = value.string("title"),
+            category = value.string("category"),
+            year = value.string("first_air_date", "release_date", "year").take(4),
+            overview = value.string("overview"),
+            locationSummary = value.string("filming_location_summary", "place_summary", "locations"),
+            posterUrl = value.stringOrNull("poster_url"),
+            detailPath = value.string("detail_path"),
+        )
+    }
 
     private fun JsonElement.items(vararg names: String): JsonArray {
         if (isJsonArray) return asJsonArray
         val root = asObjectOrNull() ?: return JsonArray()
-        return names.firstNotNullOfOrNull { root.get(it)?.takeIf(JsonElement::isJsonArray)?.asJsonArray }
+        return names.firstNotNullOfOrNull { name ->
+            root.get(name)?.let { value ->
+                when {
+                    value.isJsonArray -> value.asJsonArray
+                    value.isJsonObject -> value.asJsonObject.get("items")
+                        ?.takeIf(JsonElement::isJsonArray)?.asJsonArray
+                    else -> null
+                }
+            }
+        }
             ?: JsonArray()
     }
 
@@ -102,8 +140,8 @@ class FavoriteRepository(context: Context) {
     private fun JsonObject.stringOrNull(vararg names: String) = names.firstNotNullOfOrNull { name ->
         get(name)?.takeIf { !it.isJsonNull && it.isJsonPrimitive }?.asString?.takeIf(String::isNotBlank)
     }
-    private fun JsonObject.int(vararg names: String) = names.firstNotNullOfOrNull(::intOrNull) ?: 0
+    private fun JsonObject.int(vararg names: String) = names.firstNotNullOfOrNull { intOrNull(it) } ?: 0
     private fun JsonObject.intOrNull(name: String) = runCatching { get(name)?.takeUnless(JsonElement::isJsonNull)?.asInt }.getOrNull()
     private fun JsonObject.longOrNull(name: String) = runCatching { get(name)?.takeUnless(JsonElement::isJsonNull)?.asLong }.getOrNull()
-    private fun JsonObject.bool(name: String) = runCatching { get(name)?.asBoolean }.getOrDefault(false)
+    private fun JsonObject.bool(name: String) = runCatching { get(name)?.asBoolean }.getOrNull() ?: false
 }

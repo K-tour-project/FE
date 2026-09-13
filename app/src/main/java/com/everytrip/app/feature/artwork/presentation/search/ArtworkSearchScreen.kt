@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -37,13 +38,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.everytrip.app.core.designsystem.component.MainTopBar
+import com.everytrip.app.core.designsystem.modifier.dismissKeyboardOnTap
 import com.everytrip.app.ui.theme.Border
 import com.everytrip.app.ui.theme.PrimaryBlue
 import com.everytrip.app.ui.theme.SecondaryText
@@ -53,9 +59,17 @@ fun ArtworkSearchScreen(
     onCancelClick: () -> Unit = {},
     onRecentKeywordDeleteClick: (String) -> Unit = {},
     onClearRecentKeywordsClick: () -> Unit = {},
-    onPopularKeywordClick: (String) -> Unit = {}
+    onPopularKeywordClick: (String) -> Unit = {},
+    onSearchClick: (String) -> Unit = {},
 ) {
     var query by remember { mutableStateOf("") }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val submitSearch = {
+        focusManager.clearFocus()
+        keyboardController?.hide()
+        if (query.isNotBlank()) onSearchClick(query.trim())
+    }
     val recentKeywords = listOf("수원", "선재 업고 튀어", "행궁동 벽화마을", "부산")
     val popularKeywords = listOf(
         "수원",
@@ -73,6 +87,7 @@ fun ArtworkSearchScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .dismissKeyboardOnTap()
             .background(Color.White)
             .windowInsetsPadding(WindowInsets.statusBars)
     ) {
@@ -92,6 +107,7 @@ fun ArtworkSearchScreen(
                 query = query,
                 onQueryChange = { query = it },
                 onClearClick = { query = "" },
+                onSearchClick = submitSearch,
                 modifier = Modifier.weight(1f)
             )
 
@@ -164,6 +180,7 @@ fun SearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     onClearClick: () -> Unit,
+    onSearchClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -184,7 +201,7 @@ fun SearchBar(
                 imageVector = Icons.Default.Search,
                 contentDescription = "검색",
                 tint = SecondaryText,
-                modifier = Modifier.size(30.dp)
+                modifier = Modifier.size(30.dp).clickable(onClick = onSearchClick)
             )
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -197,6 +214,8 @@ fun SearchBar(
                     value = query,
                     onValueChange = onQueryChange,
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { onSearchClick() }),
                     textStyle = TextStyle(
                         color = Color.Black,
                         fontSize = 16.sp,

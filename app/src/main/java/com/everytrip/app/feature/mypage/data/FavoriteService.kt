@@ -4,6 +4,8 @@ import com.everytrip.app.core.network.AuthToken
 import com.google.gson.JsonElement
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Body
+import retrofit2.http.PATCH
 import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -15,8 +17,10 @@ internal interface FavoriteService {
     @PUT("me/favorites/tourism/{contentId}") suspend fun favoriteTourism(@Path("contentId") id: String, @Tag token: AuthToken): JsonElement
     @DELETE("me/favorites/tourism/{contentId}") suspend fun unfavoriteTourism(@Path("contentId") id: String, @Tag token: AuthToken): JsonElement
     @DELETE("me/favorite-places/{favoriteId}") suspend fun deleteFavorite(@Path("favoriteId") id: Long, @Tag token: AuthToken): JsonElement
+    @GET("me/favorite-places") suspend fun favoritePlaces(@Query("limit") limit: Int, @Query("offset") offset: Int, @Tag token: AuthToken): JsonElement
     @PUT("me/saved-products/{productId}") suspend fun saveProduct(@Path("productId") id: Int, @Tag token: AuthToken): JsonElement
     @DELETE("me/saved-products/{productId}") suspend fun unsaveProduct(@Path("productId") id: Int, @Tag token: AuthToken): JsonElement
     @GET("me/saved-products") suspend fun savedProducts(@Query("limit") limit: Int, @Query("offset") offset: Int, @Tag token: AuthToken): JsonElement
     @GET("me/mypage") suspend fun myPage(@Query("limit") limit: Int, @Query("offset") offset: Int, @Tag token: AuthToken): JsonElement
+    @PATCH("me/profile") suspend fun updateProfile(@Body request: ProfileImageRequest, @Tag token: AuthToken)
 }

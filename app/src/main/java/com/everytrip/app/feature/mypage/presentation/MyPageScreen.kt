@@ -2,6 +2,7 @@ package com.everytrip.app.feature.mypage.presentation
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -28,11 +29,12 @@ import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Movie
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,10 +43,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -52,8 +57,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.everytrip.app.core.designsystem.component.AppBottomNavigationBar
+import com.everytrip.app.core.designsystem.component.DefaultProfileImage
 import com.everytrip.app.core.designsystem.component.MainTopBar
 import com.everytrip.app.feature.region.presentation.search.TourismImage
+import com.everytrip.app.feature.region.presentation.search.loadTourismBitmap
 import com.everytrip.app.ui.theme.BodyText
 import com.everytrip.app.ui.theme.Border
 import com.everytrip.app.ui.theme.FavoritePink
@@ -89,8 +96,21 @@ fun MyPageRoute(
         likedPlaceCount = state.myPage.favoritePlaceCount,
         savedWorkCount = state.myPage.savedProductCount,
         profileName = state.myPage.nickname.ifBlank { "사용자" },
+        profileEmail = state.myPage.email,
+        profileImageUrl = state.myPage.profileImageUrl,
+        isLoading = state.isLoading,
+        isLoadingMorePlaces = state.isLoadingMorePlaces,
+        isLoadingMoreWorks = state.isLoadingMoreProducts,
+        hasMorePlaces = state.myPage.favoritePlaces.size < state.myPage.favoritePlaceCount,
+        hasMoreWorks = state.savedProducts.size < state.myPage.savedProductCount,
+        loadMorePlacesFailed = state.loadMorePlacesFailed,
+        loadMoreWorksFailed = state.loadMoreProductsFailed,
         onUnlikePlace = viewModel::deleteFavorite,
         onUnsaveWork = { viewModel.toggleProduct(it.toInt()) },
+        onLoadMorePlaces = viewModel::loadMorePlaces,
+        onLoadMoreWorks = viewModel::loadMoreProducts,
+        onRetryLoadMorePlaces = viewModel::retryLoadMorePlaces,
+        onRetryLoadMoreWorks = viewModel::retryLoadMoreProducts,
     )
 }
 
@@ -137,8 +157,21 @@ fun MyPageScreen(
     likedPlaceCount: Int = 12,
     savedWorkCount: Int = 6,
     profileName: String = "lee neng",
+    profileEmail: String = "user@example.com",
+    profileImageUrl: String? = null,
+    isLoading: Boolean = false,
+    isLoadingMorePlaces: Boolean = false,
+    isLoadingMoreWorks: Boolean = false,
+    hasMorePlaces: Boolean = false,
+    hasMoreWorks: Boolean = false,
+    loadMorePlacesFailed: Boolean = false,
+    loadMoreWorksFailed: Boolean = false,
     onUnlikePlace: (Long) -> Unit = {},
     onUnsaveWork: (Long) -> Unit = {},
+    onLoadMorePlaces: () -> Unit = {},
+    onLoadMoreWorks: () -> Unit = {},
+    onRetryLoadMorePlaces: () -> Unit = {},
+    onRetryLoadMoreWorks: () -> Unit = {},
 ) {
     var selectedTab by remember(initialTab) { mutableStateOf(initialTab) }
 
@@ -160,7 +193,7 @@ fun MyPageScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { ProfileCard(profileName) }
+            item { ProfileCard(profileName, profileEmail, profileImageUrl) }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     SummaryCard(
@@ -180,12 +213,46 @@ fun MyPageScreen(
                 }
             }
             item { MyPageTabSelector(selectedTab) { selectedTab = it } }
-            when (selectedTab) {
-                MyPageTab.LikedPlaces -> items(likedPlaces, key = { "place-${it.id}" }) {
-                    LikedPlaceCard(it, onClick = { onPlaceClick(it.id) }, onUnlike = { onUnlikePlace(it.id) })
+            if (isLoading && likedPlaces.isEmpty() && savedWorks.isEmpty()) {
+                item { LoadingListContent() }
+            } else when (selectedTab) {
+                MyPageTab.LikedPlaces -> {
+                    if (likedPlaces.isEmpty()) {
+                        item { EmptyListContent("아직 찜한 장소가 없어요.", "마음에 드는 여행 장소를 찜해보세요.") }
+                    } else {
+                        items(likedPlaces, key = { "place-${it.id}" }) {
+                            LikedPlaceCard(it, onClick = { onPlaceClick(it.id) }, onUnlike = { onUnlikePlace(it.id) })
+                        }
+                        if (hasMorePlaces || isLoadingMorePlaces || loadMorePlacesFailed) {
+                            item {
+                                PaginationFooter(
+                                    isLoading = isLoadingMorePlaces,
+                                    failed = loadMorePlacesFailed,
+                                    onLoadMore = onLoadMorePlaces,
+                                    onRetry = onRetryLoadMorePlaces,
+                                )
+                            }
+                        }
+                    }
                 }
-                MyPageTab.SavedWorks -> items(savedWorks, key = { "work-${it.id}" }) {
-                    SavedWorkCard(it, onClick = { onWorkClick(it.id) }, onUnsave = { onUnsaveWork(it.id) })
+                MyPageTab.SavedWorks -> {
+                    if (savedWorks.isEmpty()) {
+                        item { EmptyListContent("아직 저장한 작품이 없어요.", "여행하고 싶은 작품을 저장해보세요.") }
+                    } else {
+                        items(savedWorks, key = { "work-${it.id}" }) {
+                            SavedWorkCard(it, onClick = { onWorkClick(it.id) }, onUnsave = { onUnsaveWork(it.id) })
+                        }
+                        if (hasMoreWorks || isLoadingMoreWorks || loadMoreWorksFailed) {
+                            item {
+                                PaginationFooter(
+                                    isLoading = isLoadingMoreWorks,
+                                    failed = loadMoreWorksFailed,
+                                    onLoadMore = onLoadMoreWorks,
+                                    onRetry = onRetryLoadMoreWorks,
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -193,7 +260,55 @@ fun MyPageScreen(
 }
 
 @Composable
-private fun ProfileCard(profileName: String) {
+private fun LoadingListContent() {
+    Box(
+        modifier = Modifier.fillMaxWidth().height(180.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        CircularProgressIndicator(color = PrimaryBlue)
+    }
+}
+
+@Composable
+private fun EmptyListContent(title: String, description: String) {
+    Column(
+        modifier = Modifier.fillMaxWidth().height(180.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(title, color = BodyText, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        Text(description, color = SecondaryText, fontSize = 14.sp)
+    }
+}
+
+@Composable
+private fun PaginationFooter(
+    isLoading: Boolean,
+    failed: Boolean,
+    onLoadMore: () -> Unit,
+    onRetry: () -> Unit,
+) {
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        if (!isLoading && !failed) onLoadMore()
+    }
+    Box(
+        modifier = Modifier.fillMaxWidth().height(64.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        when {
+            failed -> TextButton(onClick = onRetry) { Text("더 불러오기 재시도") }
+            else -> CircularProgressIndicator(
+                modifier = Modifier.size(28.dp),
+                color = PrimaryBlue,
+                strokeWidth = 3.dp,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProfileCard(profileName: String, profileEmail: String, profileImageUrl: String?) {
     SurfaceCard(height = 130.dp) {
         Row(
             modifier = Modifier.fillMaxSize().padding(18.dp),
@@ -203,15 +318,26 @@ private fun ProfileCard(profileName: String) {
                 modifier = Modifier.size(92.dp).clip(CircleShape).background(Color(0xFFE6F1FF)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Outlined.Person, null, tint = PrimaryBlue, modifier = Modifier.size(56.dp))
+                val profileBitmap by produceState<android.graphics.Bitmap?>(null, profileImageUrl) {
+                    value = loadTourismBitmap(profileImageUrl)
+                }
+                profileBitmap?.let {
+                    Image(
+                        bitmap = it.asImageBitmap(),
+                        contentDescription = profileName,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                } ?: DefaultProfileImage(
+                    modifier = Modifier.fillMaxSize(),
+                    contentDescription = "$profileName 기본 프로필 이미지",
+                )
             }
             Spacer(Modifier.width(18.dp))
             Column(Modifier.weight(1f)) {
                 Text(profileName, fontSize = MyPageTextSize.profileName, fontWeight = FontWeight.Bold, color = BodyText)
                 Spacer(Modifier.height(6.dp))
-                Text("콘텐츠로 떠나는 여행을 저장해보세요.", fontSize = MyPageTextSize.profileMessage, color = SecondaryText)
-                Spacer(Modifier.height(12.dp))
-                Box(Modifier.fillMaxWidth().height(1.dp).background(PrimaryBlue.copy(alpha = 0.25f)))
+                Text(profileEmail, fontSize = MyPageTextSize.profileMessage, color = SecondaryText)
             }
         }
     }

@@ -46,12 +46,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.everytrip.app.core.designsystem.component.MainTopBar
+import com.everytrip.app.core.designsystem.modifier.dismissKeyboardOnTap
 import com.everytrip.app.feature.chatbot.data.ChatPlace
 import com.everytrip.app.feature.region.presentation.search.TourismImage
 import com.everytrip.app.ui.theme.BodyText
@@ -86,6 +89,8 @@ private fun AiChatbotContent(
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(uiState.messages.size, uiState.isLoading) {
         if (uiState.messages.isNotEmpty()) {
@@ -108,6 +113,8 @@ private fun AiChatbotContent(
                 enabled = !uiState.isLoading,
                 onInputChanged = { inputText = it },
                 onSendClicked = {
+                    focusManager.clearFocus()
+                    keyboardController?.hide()
                     if (inputText.isNotBlank()) {
                         onSendMessage(inputText)
                         inputText = ""
@@ -119,7 +126,7 @@ private fun AiChatbotContent(
     ) { paddingValues ->
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize().padding(paddingValues),
+            modifier = Modifier.fillMaxSize().dismissKeyboardOnTap().padding(paddingValues),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
