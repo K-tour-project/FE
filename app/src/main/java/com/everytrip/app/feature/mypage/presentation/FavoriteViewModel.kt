@@ -3,16 +3,29 @@ package com.everytrip.app.feature.mypage.presentation
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.cachedIn
 import com.everytrip.app.feature.mypage.data.FavoriteRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
+import com.everytrip.app.feature.auth.data.remote.AuthHttpException
+import com.everytrip.app.feature.auth.data.remote.AuthSessionManager
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class FavoriteViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = FavoriteRepository(application)
+    private val session = AuthSessionManager.get(application)
     private val _uiState = MutableStateFlow(MyPageUiState())
     val uiState = _uiState.asStateFlow()
+    private val pagingGeneration = MutableStateFlow(0)
+    val favoritePlaces = pagingGeneration
+        .flatMapLatest { repository.favoritePlacesPaged() }
+        .cachedIn(viewModelScope)
+    val savedProducts = pagingGeneration
+        .flatMapLatest { repository.savedProductsPaged() }
+        .cachedIn(viewModelScope)
 
     fun refresh() {
         viewModelScope.launch {
@@ -29,6 +42,7 @@ class FavoriteViewModel(application: Application) : AndroidViewModel(application
                         savedProductIds = products.map { it.productId }.toSet(),
                     )
                 }.onFailure { _uiState.update { it.copy(isLoading = false) } }
+            pagingGeneration.value++
         }
     }
 
@@ -122,9 +136,52 @@ class FavoriteViewModel(application: Application) : AndroidViewModel(application
 
     fun deleteFavorite(id: Long) = mutate { repository.deleteFavorite(id); refresh() }
 
-    fun updateProfileImage(url: String?) = mutate {
-        repository.updateProfileImage(url)
-        refresh()
+    fun updateNickname(nickname: String) = settingsMutation {
+        val updated = repository.updateNickname(nickname)
+        _uiState.update { it.copy(myPage = it.myPage.copy(nickname = updated.nickname)) }
+        "닉네임이 변경되었습니다."
+    }
+
+    fun changePassword(currentPassword: String, newPassword: String, onSessionEnded: () -> Unit) = settingsMutation {
+        repository.changePassword(currentPassword, newPassword)
+        session.clearTokens()
+        onSessionEnded()
+        "비밀번호가 변경되었습니다. 다시 로그인해 주세요."
+    }
+
+    fun deleteAccount(onSessionEnded: () -> Unit) = settingsMutation {
+        repository.deleteAccount()
+        session.clearTokens()
+        onSessionEnded()
+        "회원 탈퇴가 완료되었습니다."
+    }
+
+    fun updateProfileImage(bytes: ByteArray, mimeType: String, fileName: String) = settingsMutation {
+        val updated = repository.updateProfileImage(bytes, mimeType, fileName)
+        _uiState.update { it.copy(myPage = it.myPage.copy(profileImageUrl = updated.profileImageUrl)) }
+        "프로필 이미지가 변경되었습니다."
+    }
+
+    fun removeProfileImage() = settingsMutation {
+        repository.removeProfileImage()
+        _uiState.update { it.copy(myPage = it.myPage.copy(profileImageUrl = null)) }
+        "프로필 이미지가 삭제되었습니다."
+    }
+
+    fun clearSettingsMessage() = _uiState.update { it.copy(settingsMessage = null) }
+    fun showSettingsMessage(message: String) = _uiState.update { it.copy(settingsMessage = message) }
+
+    private fun settingsMutation(block: suspend () -> String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSettingsLoading = true, settingsMessage = null) }
+            runCatching { block() }
+                .onSuccess { message -> _uiState.update { it.copy(isSettingsLoading = false, settingsMessage = message) } }
+                .onFailure { error ->
+                    val message = (error as? AuthHttpException)?.detail
+                        ?: error.message ?: "요청을 처리하지 못했습니다."
+                    _uiState.update { it.copy(isSettingsLoading = false, settingsMessage = message) }
+                }
+        }
     }
 
     private fun mutate(block: suspend () -> Unit) {

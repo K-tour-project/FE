@@ -61,6 +61,7 @@ fun ArtworkSearchScreen(
     onClearRecentKeywordsClick: () -> Unit = {},
     onPopularKeywordClick: (String) -> Unit = {},
     onSearchClick: (String) -> Unit = {},
+    onArtworkClick: (Int) -> Unit = {},
 ) {
     var query by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current

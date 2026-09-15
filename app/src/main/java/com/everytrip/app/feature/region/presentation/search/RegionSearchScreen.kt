@@ -21,6 +21,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -41,8 +43,11 @@ fun RegionSearchScreen(
     onTogglePlace: (Int) -> Unit = {},
     onToggleTourism: (String) -> Unit = {},
     onToggleProduct: (Int) -> Unit = {},
+    onArtworkClick: (Int) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val places = viewModel.places.collectAsLazyPagingItems()
+    val displayState = uiState.copy(places = places.itemSnapshotList.items)
     val context = LocalContext.current
     val bottomSheetState = rememberStandardBottomSheetState(
         initialValue = SheetValue.PartiallyExpanded,
@@ -76,9 +81,9 @@ fun RegionSearchScreen(
         }
     }
 
-    if (uiState.places.isEmpty() && uiState.placesErrorMessage != null) {
+    if (places.itemCount == 0 && places.loadState.refresh is LoadState.Error) {
         ApiErrorScreen(
-            onRetryClick = viewModel::loadMorePlaces,
+            onRetryClick = places::retry,
             onBackClick = onBackClick,
             modifier = modifier.background(Color.White),
         )
@@ -124,17 +129,17 @@ fun RegionSearchScreen(
                 sheetPeekHeight = 320.dp,
                 sheetContent = {
                     RegionBottomSheet(
-                        state = uiState,
+                        state = displayState,
+                        places = places,
                         isExpanded = bottomSheetState.currentValue == SheetValue.Expanded,
-                        onPlaceClick = viewModel::selectPlace,
-                        onLoadMore = viewModel::loadMorePlaces,
+                        onPlaceClick = viewModel::selectRelatedPlace,
                     )
                 },
             ) { innerPadding ->
                 RegionKakaoMap(
-                    uiState = uiState,
+                    uiState = displayState,
                     onMapError = {},
-                    onPlaceClick = viewModel::selectPlace,
+                    onPlaceClick = viewModel::selectRelatedPlace,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding),
@@ -162,7 +167,7 @@ fun RegionSearchScreen(
                     ?: uiState.selectedProductId?.let(viewModel::selectContent)
                     ?: uiState.selectedContentId?.let(viewModel::selectRelatedPlace)
             },
-            onContentClick = viewModel::selectContent,
+            onContentClick = onArtworkClick,
             onFilmingPlaceClick = viewModel::selectFilmingPlace,
             onRelatedPlaceClick = viewModel::selectRelatedPlace,
             favoritePlaceIds = favoriteState.favoritePlaceIds,

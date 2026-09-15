@@ -1,7 +1,13 @@
 package com.everytrip.app.feature.mypage.data
 
+data class PageResult<T>(val items: List<T>, val total: Int?)
+
 data class FavoriteMutation(val isSaved: Boolean, val favoriteId: Long?, val favoritePlaceCount: Int, val savedProductCount: Int)
-data class ProfileImageRequest(val profileImageUrl: String?)
+data class NicknameRequest(val nickname: String)
+data class PasswordChangeRequest(
+    val currentPassword: String,
+    val newPassword: String,
+)
 data class MyPageData(
     val nickname: String = "",
     val email: String = "",

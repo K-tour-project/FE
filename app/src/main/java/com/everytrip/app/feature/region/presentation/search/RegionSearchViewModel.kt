@@ -14,6 +14,8 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.everytrip.app.feature.region.data.model.RegionBoundary
 import com.everytrip.app.feature.region.data.repository.RegionRepository
 import com.everytrip.app.feature.region.data.repository.RegionRepositoryImpl
@@ -21,8 +23,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class RegionSearchViewModel(
     application: Application,
     private val regionRepository: RegionRepository = RegionRepositoryImpl(),
@@ -48,8 +55,21 @@ class RegionSearchViewModel(
     private var sigungusRequestId = 0
     private val tourism = RegionTourismController(regionRepository, _uiState, viewModelScope)
 
-    private fun resetPlaces() = tourism.resetPlaces()
-    fun loadMorePlaces() = tourism.loadMorePlaces()
+    val places = uiState
+        .map { it.selectedRegionId }
+        .distinctUntilChanged()
+        .flatMapLatest { regionId ->
+            if (regionId == null) flowOf(PagingData.empty())
+            else regionRepository.getTourismPlacesPaged(regionId) { total ->
+                _uiState.update { it.copy(totalPlaces = total) }
+            }
+        }
+        .cachedIn(viewModelScope)
+
+    private fun resetPlaces() {
+        tourism.closePlaceDetail()
+        _uiState.update { it.copy(totalPlaces = 0) }
+    }
     fun selectPlace(contentId: String) = tourism.selectPlace(contentId)
     fun closePlaceDetail() = tourism.closePlaceDetail()
     fun selectFilmingPlace(placeId: Int) = tourism.selectFilmingPlace(placeId)
@@ -293,7 +313,6 @@ class RegionSearchViewModel(
     private fun loadRegionBoundary(regionId: Int) {
         val requestId = ++regionBoundaryRequestId
         _uiState.update { it.copy(selectedRegionId = regionId) }
-        loadMorePlaces()
         viewModelScope.launch {
             _uiState.update {
                 it.copy(

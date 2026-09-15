@@ -14,4 +14,6 @@ data class MyPageUiState(
     val isLoadingMoreProducts: Boolean = false,
     val loadMorePlacesFailed: Boolean = false,
     val loadMoreProductsFailed: Boolean = false,
+    val isSettingsLoading: Boolean = false,
+    val settingsMessage: String? = null,
 )

@@ -22,9 +22,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.everytrip.app.core.designsystem.component.AppBottomNavigationBar
 import com.everytrip.app.core.designsystem.component.NetworkErrorDialog
 import com.everytrip.app.feature.artwork.presentation.search.ArtworkSearchScreen
+import com.everytrip.app.feature.artwork.presentation.detail.ArtworkDetailRoute
 import com.everytrip.app.feature.auth.presentation.login.LoginScreen
 import com.everytrip.app.feature.auth.presentation.login.LoginViewModel
 import com.everytrip.app.feature.auth.presentation.login.SessionCheckState
@@ -33,8 +37,10 @@ import com.everytrip.app.feature.auth.presentation.signup.SignUpViewModel
 import com.everytrip.app.feature.chatbot.presentation.AiChatbotScreen
 import com.everytrip.app.feature.chatbot.presentation.ChatViewModel
 import com.everytrip.app.feature.home.presentation.HomeScreen
+import com.everytrip.app.feature.home.presentation.HomeViewModel
 import com.everytrip.app.feature.mypage.presentation.FavoriteViewModel
 import com.everytrip.app.feature.mypage.presentation.MyPageRoute
+import com.everytrip.app.feature.mypage.presentation.SettingsRoute
 import com.everytrip.app.feature.region.presentation.search.RegionSearchScreen
 import com.everytrip.app.feature.region.presentation.search.RegionSearchViewModel
 import com.everytrip.app.ui.theme.PrimaryBlue
@@ -147,13 +153,35 @@ fun AppNavHost(
                         )
                     }
                     composable(AppRoute.Home.route) {
+                        val homeViewModel: HomeViewModel = viewModel()
+                        val homeUiState by homeViewModel.uiState.collectAsState()
                         HomeScreen(
+                            uiState = homeUiState,
                             onNavigateToSearch = { navController.navigateBottom(AppRoute.ArtworkSearch) },
                             onNavigateToRegionSearch = { navController.navigateBottom(AppRoute.RegionSearch) },
+                            onNavigateToDestination = { detailPath ->
+                                val contentId = detailPath.substringAfterLast('/').takeIf(String::isNotBlank)
+                                if (detailPath.startsWith("/tourism-places/") && contentId != null) {
+                                    regionSearchViewModel.selectRelatedPlace(contentId)
+                                    navController.navigateBottom(AppRoute.RegionSearch)
+                                }
+                            },
+                            onNavigateToWork = { detailPath ->
+                                detailPath.substringAfterLast('/').toIntOrNull()?.let { productId ->
+                                    navController.navigate(AppRoute.ArtworkDetail.createRoute(productId))
+                                }
+                            },
+                            onRetry = homeViewModel::loadHome,
                         )
                     }
                     composable(AppRoute.Chatbot.route) { AiChatbotScreen(chatViewModel) }
-                    composable(AppRoute.ArtworkSearch.route) { ArtworkSearchScreen() }
+                    composable(AppRoute.ArtworkSearch.route) {
+                        ArtworkSearchScreen(
+                            onArtworkClick = { productId ->
+                                navController.navigate(AppRoute.ArtworkDetail.createRoute(productId))
+                            },
+                        )
+                    }
                     composable(AppRoute.RegionSearch.route) {
                         RegionSearchScreen(
                             viewModel = regionSearchViewModel,
@@ -167,11 +195,16 @@ fun AppNavHost(
                             onTogglePlace = favoriteViewModel::togglePlace,
                             onToggleTourism = favoriteViewModel::toggleTourism,
                             onToggleProduct = favoriteViewModel::toggleProduct,
+                            onArtworkClick = { productId ->
+                                regionSearchViewModel.closePlaceDetail()
+                                navController.navigate(AppRoute.ArtworkDetail.createRoute(productId))
+                            },
                         )
                     }
                     composable(AppRoute.MyPage.route) {
                         MyPageRoute(
                             viewModel = favoriteViewModel,
+                            onSettingsClick = { navController.navigate(AppRoute.Settings.route) },
                             onPlaceClick = { detailPath ->
                                 val id = detailPath.substringAfterLast('/').takeIf(String::isNotBlank)
                                 when {
@@ -183,10 +216,40 @@ fun AppNavHost(
                                 navController.navigateBottom(AppRoute.RegionSearch)
                             },
                             onWorkClick = { detailPath ->
-                                detailPath.substringAfterLast('/').toIntOrNull()
-                                    ?.let(regionSearchViewModel::selectContent)
+                                detailPath.substringAfterLast('/').toIntOrNull()?.let { productId ->
+                                    navController.navigate(AppRoute.ArtworkDetail.createRoute(productId))
+                                }
+                            },
+                        )
+                    }
+                    composable(AppRoute.Settings.route) {
+                        SettingsRoute(
+                            viewModel = favoriteViewModel,
+                            authProvider = loginUiState.user?.authProvider,
+                            onBackClick = { navController.popBackStack() },
+                            onLogoutClick = {
+                                isGuestMode = false
+                                loginViewModel.logout()
+                            },
+                        )
+                    }
+                    composable(
+                        route = AppRoute.ArtworkDetail.route,
+                        arguments = listOf(navArgument("productId") { type = NavType.IntType }),
+                    ) { entry ->
+                        val productId = entry.arguments?.getInt("productId") ?: return@composable
+                        ArtworkDetailRoute(
+                            productId = productId,
+                            onBackClick = { navController.popBackStack() },
+                            onFilmingPlaceClick = { placeId ->
+                                regionSearchViewModel.selectFilmingPlace(placeId)
                                 navController.navigateBottom(AppRoute.RegionSearch)
                             },
+                            onRelatedArtworkClick = { relatedId ->
+                                navController.navigate(AppRoute.ArtworkDetail.createRoute(relatedId))
+                            },
+                            isSaved = { it in favoriteUiState.savedProductIds },
+                            onSaveClick = favoriteViewModel::toggleProduct,
                         )
                     }
                 }

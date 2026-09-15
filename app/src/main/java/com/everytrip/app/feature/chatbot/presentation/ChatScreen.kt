@@ -3,6 +3,7 @@ package com.everytrip.app.feature.chatbot.presentation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,8 +47,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -55,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.everytrip.app.core.designsystem.component.MainTopBar
 import com.everytrip.app.core.designsystem.modifier.dismissKeyboardOnTap
+import com.everytrip.app.R
 import com.everytrip.app.feature.chatbot.data.ChatPlace
 import com.everytrip.app.feature.region.presentation.search.TourismImage
 import com.everytrip.app.ui.theme.BodyText
@@ -133,31 +137,12 @@ private fun AiChatbotContent(
             items(uiState.messages) { message ->
                 when (message) {
                     is ChatMessage.User -> UserMessageBubble(message.text)
-                    is ChatMessage.Bot -> {
-                        BotMessageBubble(message.text)
-                        if (message.places.isNotEmpty()) {
-                            Spacer(Modifier.height(2.dp))
-                            Text(
-                                text = "관련 촬영지",
-                                color = BodyText,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                            )
-                            message.places.forEach { place ->
-                                ChatPlaceCard(place, onClick = { onPlaceClick(place.placeId) })
-                                Spacer(Modifier.height(8.dp))
-                            }
-                        }
-                    }
+                    is ChatMessage.Bot -> BotMessageGroup(message, onPlaceClick)
                 }
             }
             if (uiState.isLoading) {
                 item {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = PrimaryBlue)
-                        Spacer(Modifier.width(10.dp))
-                        Text("답변을 찾고 있어요…", color = SecondaryText, fontSize = 14.sp)
-                    }
+                    BotLoadingMessage()
                 }
             }
         }
@@ -165,15 +150,59 @@ private fun AiChatbotContent(
 }
 
 @Composable
+private fun BotMessageGroup(message: ChatMessage.Bot, onPlaceClick: (String) -> Unit) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+        BotProfileImage()
+        Spacer(Modifier.width(9.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            BotMessageBubble(message.text)
+            if (message.places.isNotEmpty()) {
+                Text("관련 촬영지", color = BodyText, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                message.places.forEach { place ->
+                    ChatPlaceCard(place, onClick = { onPlaceClick(place.placeId) })
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BotProfileImage() {
+    Image(
+        painter = painterResource(R.drawable.chatbot),
+        contentDescription = "Every Trip AI 프로필",
+        contentScale = ContentScale.Crop,
+        modifier = Modifier.size(40.dp).clip(CircleShape).background(Chat),
+    )
+}
+
+@Composable
 private fun BotMessageBubble(text: String) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
         Box(
             Modifier.wrapContentWidth()
-                .widthIn(max = 340.dp)
-                .background(Chat, RoundedCornerShape(18.dp, 18.dp, 18.dp, 4.dp))
+                .widthIn(max = 292.dp)
+                .background(Chat, RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp))
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             Text(text, color = BodyText, fontSize = 15.sp, lineHeight = 22.sp)
+        }
+    }
+}
+
+@Composable
+private fun BotLoadingMessage() {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+        BotProfileImage()
+        Spacer(Modifier.width(9.dp))
+        Row(
+            modifier = Modifier.background(Chat, RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp))
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = PrimaryBlue)
+            Spacer(Modifier.width(9.dp))
+            Text("답변을 찾고 있어요…", color = SecondaryText, fontSize = 14.sp)
         }
     }
 }

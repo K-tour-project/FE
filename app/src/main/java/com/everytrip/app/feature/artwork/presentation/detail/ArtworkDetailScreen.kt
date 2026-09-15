@@ -29,6 +29,11 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -57,6 +62,44 @@ import com.everytrip.app.ui.theme.NavyText
 import com.everytrip.app.ui.theme.PrimaryBlue
 import com.everytrip.app.ui.theme.ProjectTheme
 import com.everytrip.app.ui.theme.SecondaryText
+
+@Composable
+fun ArtworkDetailRoute(
+    productId: Int,
+    onBackClick: () -> Unit,
+    onFilmingPlaceClick: (Int) -> Unit,
+    onRelatedArtworkClick: (Int) -> Unit,
+    isSaved: (Int) -> Boolean = { false },
+    onSaveClick: (Int) -> Unit = {},
+    viewModel: ArtworkDetailViewModel = viewModel(),
+) {
+    val state by viewModel.uiState.collectAsState()
+    LaunchedEffect(productId) { viewModel.load(productId) }
+    when {
+        state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = PrimaryBlue)
+        }
+        state.errorMessage != null -> Column(
+            Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(state.errorMessage ?: "작품 정보를 불러오지 못했어요.", color = SecondaryText)
+            Spacer(Modifier.height(16.dp))
+            Button(onClick = { viewModel.load(productId) }) { Text("다시 시도") }
+        }
+        else -> state.content?.let { content ->
+            ArtworkDetailScreen(
+                content = content,
+                onBackClick = onBackClick,
+                onFilmingLocationClick = { onFilmingPlaceClick(it.placeId) },
+                onRelatedProductClick = { onRelatedArtworkClick(it.productId) },
+                isSaved = isSaved(content.productId),
+                onSaveClick = { onSaveClick(content.productId) },
+            )
+        }
+    }
+}
 
 @Composable
 fun ArtworkDetailScreen(

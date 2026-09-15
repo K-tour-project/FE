@@ -9,6 +9,14 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import retrofit2.HttpException
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import com.google.gson.JsonParser
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import kotlinx.coroutines.flow.Flow
 
 class FavoriteRepository(context: Context) {
     private val service = NetworkProvider.create(FavoriteService::class.java)
@@ -28,33 +36,77 @@ class FavoriteRepository(context: Context) {
         if (saved) service.saveProduct(id, it) else service.unsaveProduct(id, it)
     }.toMutation()
 
+    fun favoritePlacesPaged(): Flow<PagingData<FavoritePlaceData>> = Pager(
+        config = pagingConfig(),
+        pagingSourceFactory = { FavoritePlacePagingSource(this) },
+    ).flow
+
+    fun savedProductsPaged(): Flow<PagingData<SavedProductData>> = Pager(
+        config = pagingConfig(),
+        pagingSourceFactory = { SavedProductPagingSource(this) },
+    ).flow
+
     suspend fun getMyPage(limit: Int = 20, offset: Int = 0): MyPageData {
         validatePage(limit, offset)
         return authenticated { service.myPage(limit, offset, it) }.toMyPage()
     }
 
-    suspend fun getFavoritePlaces(limit: Int = 20, offset: Int = 0): List<FavoritePlaceData> {
+    suspend fun getFavoritePlaces(limit: Int = 20, offset: Int = 0): List<FavoritePlaceData> =
+        getFavoritePlacesPage(limit, offset).items
+
+    suspend fun getFavoritePlacesPage(limit: Int = 20, offset: Int = 0): PageResult<FavoritePlaceData> {
         validatePage(limit, offset)
-        return authenticated { service.favoritePlaces(limit, offset, it) }.items("favorite_places", "items")
-            .mapNotNull { it.asObjectOrNull()?.toFavoritePlace() }
+        val response = authenticated { service.favoritePlaces(limit, offset, it) }
+        return PageResult(
+            items = response.items("favorite_places", "items")
+                .mapNotNull { it.asObjectOrNull()?.toFavoritePlace() },
+            total = response.pageTotal("favorite_places"),
+        )
     }
 
-    suspend fun getSavedProducts(limit: Int = 20, offset: Int = 0): List<SavedProductData> {
+    suspend fun getSavedProducts(limit: Int = 20, offset: Int = 0): List<SavedProductData> =
+        getSavedProductsPage(limit, offset).items
+
+    suspend fun getSavedProductsPage(limit: Int = 20, offset: Int = 0): PageResult<SavedProductData> {
         validatePage(limit, offset)
-        return authenticated { service.savedProducts(limit, offset, it) }.items("saved_products", "items")
-            .mapNotNull { it.asObjectOrNull()?.toSavedProduct() }
+        val response = authenticated { service.savedProducts(limit, offset, it) }
+        return PageResult(
+            items = response.items("saved_products", "items")
+                .mapNotNull { it.asObjectOrNull()?.toSavedProduct() },
+            total = response.pageTotal("saved_products"),
+        )
     }
 
-    suspend fun updateProfileImage(profileImageUrl: String?) = authenticated {
-        service.updateProfile(ProfileImageRequest(profileImageUrl), it)
+    suspend fun updateNickname(nickname: String): MyPageData = authenticated {
+        service.updateNickname(NicknameRequest(nickname.trim()), it)
+    }.toMyPage()
+
+    suspend fun changePassword(currentPassword: String, newPassword: String) = authenticated {
+        service.changePassword(PasswordChangeRequest(currentPassword, newPassword), it)
     }
+
+    suspend fun deleteAccount() = authenticated { service.deleteAccount(it) }
+
+    suspend fun updateProfileImage(bytes: ByteArray, mimeType: String, fileName: String): MyPageData {
+        val body = bytes.toRequestBody(mimeType.toMediaType())
+        val part = MultipartBody.Part.createFormData("profile_image", fileName, body)
+        return authenticated { service.updateProfileImage(part, it) }.toMyPage()
+    }
+
+    suspend fun removeProfileImage(): MyPageData = authenticated {
+        service.removeProfileImage("true".toRequestBody("text/plain".toMediaType()), it)
+    }.toMyPage()
 
     private suspend fun <T> authenticated(block: suspend (AuthToken) -> T): T =
         session.executeAuthenticated { token ->
             try {
                 block(AuthToken(token))
             } catch (error: HttpException) {
-                throw AuthHttpException(error.code(), error.response()?.errorBody()?.string().orEmpty())
+                val body = error.response()?.errorBody()?.string().orEmpty()
+                val detail = runCatching {
+                    JsonParser.parseString(body).asJsonObject.get("detail")?.asString
+                }.getOrNull() ?: body
+                throw AuthHttpException(error.code(), detail)
             }
         }
 
@@ -62,6 +114,13 @@ class FavoriteRepository(context: Context) {
         require(limit in 1..50) { "limit must be between 1 and 50." }
         require(offset >= 0) { "offset must be at least 0." }
     }
+
+    private fun pagingConfig() = PagingConfig(
+        pageSize = 20,
+        initialLoadSize = 20,
+        prefetchDistance = 3,
+        enablePlaceholders = false,
+    )
 
     private fun JsonElement.toMutation(): FavoriteMutation {
         val value = asObjectOrNull() ?: JsonObject()
@@ -132,6 +191,16 @@ class FavoriteRepository(context: Context) {
             }
         }
             ?: JsonArray()
+    }
+
+    private fun JsonElement.pageTotal(containerName: String): Int? {
+        val root = asObjectOrNull() ?: return null
+        return root.intOrNull("total")
+            ?: root.obj(containerName)?.intOrNull("total")
+            ?: root.obj("counts")?.intOrNull(
+                if (containerName == "favorite_places") "favorite_place_count"
+                else "saved_product_count",
+            )
     }
 
     private fun JsonElement.asObjectOrNull() = takeIf(JsonElement::isJsonObject)?.asJsonObject

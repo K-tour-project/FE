@@ -10,6 +10,10 @@ import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 import retrofit2.http.Tag
+import retrofit2.http.Multipart
+import retrofit2.http.Part
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 
 internal interface FavoriteService {
     @PUT("me/favorites/places/{placeId}") suspend fun favoritePlace(@Path("placeId") id: Int, @Tag token: AuthToken): JsonElement
@@ -22,5 +26,13 @@ internal interface FavoriteService {
     @DELETE("me/saved-products/{productId}") suspend fun unsaveProduct(@Path("productId") id: Int, @Tag token: AuthToken): JsonElement
     @GET("me/saved-products") suspend fun savedProducts(@Query("limit") limit: Int, @Query("offset") offset: Int, @Tag token: AuthToken): JsonElement
     @GET("me/mypage") suspend fun myPage(@Query("limit") limit: Int, @Query("offset") offset: Int, @Tag token: AuthToken): JsonElement
-    @PATCH("me/profile") suspend fun updateProfile(@Body request: ProfileImageRequest, @Tag token: AuthToken)
+    @PATCH("me/nickname") suspend fun updateNickname(@Body request: NicknameRequest, @Tag token: AuthToken): JsonElement
+    @PATCH("me/password") suspend fun changePassword(@Body request: PasswordChangeRequest, @Tag token: AuthToken): JsonElement
+    @DELETE("me/account") suspend fun deleteAccount(@Tag token: AuthToken): JsonElement
+    @Multipart
+    @PATCH("me/profile")
+    suspend fun updateProfileImage(@Part image: MultipartBody.Part, @Tag token: AuthToken): JsonElement
+    @Multipart
+    @PATCH("me/profile")
+    suspend fun removeProfileImage(@Part("remove_image") removeImage: RequestBody, @Tag token: AuthToken): JsonElement
 }

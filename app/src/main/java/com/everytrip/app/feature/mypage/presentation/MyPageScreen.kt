@@ -56,6 +56,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import com.everytrip.app.feature.mypage.data.FavoritePlaceData
+import com.everytrip.app.feature.mypage.data.SavedProductData
 import com.everytrip.app.core.designsystem.component.AppBottomNavigationBar
 import com.everytrip.app.core.designsystem.component.DefaultProfileImage
 import com.everytrip.app.core.designsystem.component.MainTopBar
@@ -76,21 +81,23 @@ fun MyPageRoute(
     onWorkClick: (String) -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsState()
+    val favoritePlaces = viewModel.favoritePlaces.collectAsLazyPagingItems()
+    val savedProducts = viewModel.savedProducts.collectAsLazyPagingItems()
     androidx.compose.runtime.LaunchedEffect(Unit) { viewModel.refresh() }
     MyPageScreen(
         onSettingsClick = onSettingsClick,
         onPlaceClick = { id ->
-            state.myPage.favoritePlaces.firstOrNull { it.favoriteId == id }
+            favoritePlaces.itemSnapshotList.items.firstOrNull { it.favoriteId == id }
                 ?.detailPath?.let(onPlaceClick)
         },
         onWorkClick = { id ->
-            state.savedProducts.firstOrNull { it.productId.toLong() == id }
+            savedProducts.itemSnapshotList.items.firstOrNull { it.productId.toLong() == id }
                 ?.detailPath?.let(onWorkClick)
         },
-        likedPlaces = state.myPage.favoritePlaces.map {
+        likedPlaces = favoritePlaces.itemSnapshotList.items.map {
             LikedPlaceUi(it.favoriteId, it.name, it.description, it.address, it.imageUrl)
         },
-        savedWorks = state.savedProducts.map {
+        savedWorks = savedProducts.itemSnapshotList.items.map {
             SavedWorkUi(it.productId.toLong(), it.title, it.category, it.year, it.overview, it.locationSummary, it.posterUrl)
         },
         likedPlaceCount = state.myPage.favoritePlaceCount,
@@ -111,6 +118,8 @@ fun MyPageRoute(
         onLoadMoreWorks = viewModel::loadMoreProducts,
         onRetryLoadMorePlaces = viewModel::retryLoadMorePlaces,
         onRetryLoadMoreWorks = viewModel::retryLoadMoreProducts,
+        likedPaging = favoritePlaces,
+        savedPaging = savedProducts,
     )
 }
 
@@ -172,6 +181,8 @@ fun MyPageScreen(
     onLoadMoreWorks: () -> Unit = {},
     onRetryLoadMorePlaces: () -> Unit = {},
     onRetryLoadMoreWorks: () -> Unit = {},
+    likedPaging: LazyPagingItems<FavoritePlaceData>? = null,
+    savedPaging: LazyPagingItems<SavedProductData>? = null,
 ) {
     var selectedTab by remember(initialTab) { mutableStateOf(initialTab) }
 
@@ -217,7 +228,27 @@ fun MyPageScreen(
                 item { LoadingListContent() }
             } else when (selectedTab) {
                 MyPageTab.LikedPlaces -> {
-                    if (likedPlaces.isEmpty()) {
+                    if (likedPaging != null) {
+                        when {
+                            likedPaging.itemCount == 0 && likedPaging.loadState.refresh is LoadState.Loading ->
+                                item { LoadingListContent() }
+                            likedPaging.itemCount == 0 && likedPaging.loadState.refresh is LoadState.Error ->
+                                item { PagingErrorContent(likedPaging::retry) }
+                            likedPaging.itemCount == 0 ->
+                                item { EmptyListContent("아직 찜한 장소가 없어요.", "마음에 드는 여행 장소를 찜해보세요.") }
+                            else -> {
+                                items(likedPaging.itemCount, key = { index ->
+                                    "place-${likedPaging.peek(index)?.favoriteId ?: index}"
+                                }) { index ->
+                                    likedPaging[index]?.let { data ->
+                                        val place = LikedPlaceUi(data.favoriteId, data.name, data.description, data.address, data.imageUrl)
+                                        LikedPlaceCard(place, { onPlaceClick(place.id) }, { onUnlikePlace(place.id) })
+                                    }
+                                }
+                                pagingFooter(likedPaging.loadState.append, likedPaging::retry)
+                            }
+                        }
+                    } else if (likedPlaces.isEmpty()) {
                         item { EmptyListContent("아직 찜한 장소가 없어요.", "마음에 드는 여행 장소를 찜해보세요.") }
                     } else {
                         items(likedPlaces, key = { "place-${it.id}" }) {
@@ -236,7 +267,27 @@ fun MyPageScreen(
                     }
                 }
                 MyPageTab.SavedWorks -> {
-                    if (savedWorks.isEmpty()) {
+                    if (savedPaging != null) {
+                        when {
+                            savedPaging.itemCount == 0 && savedPaging.loadState.refresh is LoadState.Loading ->
+                                item { LoadingListContent() }
+                            savedPaging.itemCount == 0 && savedPaging.loadState.refresh is LoadState.Error ->
+                                item { PagingErrorContent(savedPaging::retry) }
+                            savedPaging.itemCount == 0 ->
+                                item { EmptyListContent("아직 저장한 작품이 없어요.", "여행하고 싶은 작품을 저장해보세요.") }
+                            else -> {
+                                items(savedPaging.itemCount, key = { index ->
+                                    "work-${savedPaging.peek(index)?.productId ?: index}"
+                                }) { index ->
+                                    savedPaging[index]?.let { data ->
+                                        val work = SavedWorkUi(data.productId.toLong(), data.title, data.category, data.year, data.overview, data.locationSummary, data.posterUrl)
+                                        SavedWorkCard(work, { onWorkClick(work.id) }, { onUnsaveWork(work.id) })
+                                    }
+                                }
+                                pagingFooter(savedPaging.loadState.append, savedPaging::retry)
+                            }
+                        }
+                    } else if (savedWorks.isEmpty()) {
                         item { EmptyListContent("아직 저장한 작품이 없어요.", "여행하고 싶은 작품을 저장해보세요.") }
                     } else {
                         items(savedWorks, key = { "work-${it.id}" }) {
@@ -256,6 +307,24 @@ fun MyPageScreen(
                 }
             }
         }
+    }
+}
+
+private fun androidx.compose.foundation.lazy.LazyListScope.pagingFooter(
+    loadState: LoadState,
+    retry: () -> Unit,
+) {
+    when (loadState) {
+        is LoadState.Loading -> item { LoadingListContent() }
+        is LoadState.Error -> item { PagingErrorContent(retry) }
+        else -> Unit
+    }
+}
+
+@Composable
+private fun PagingErrorContent(onRetry: () -> Unit) {
+    Box(Modifier.fillMaxWidth().height(64.dp), contentAlignment = Alignment.Center) {
+        TextButton(onClick = onRetry) { Text("다시 시도") }
     }
 }
 
