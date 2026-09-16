@@ -59,7 +59,12 @@ internal suspend fun loadTourismBitmap(url: String?): Bitmap? {
 }
 
 @Composable
-fun TourismImage(url: String?, name: String, modifier: Modifier = Modifier) {
+fun TourismImage(
+    url: String?,
+    name: String,
+    modifier: Modifier = Modifier,
+    placeholderText: String = "썸네일 없음",
+) {
     val bitmap by produceState<Bitmap?>(null, url) {
         value = null
         value = loadTourismBitmap(url)
@@ -70,7 +75,7 @@ fun TourismImage(url: String?, name: String, modifier: Modifier = Modifier) {
             modifier = modifier, contentScale = ContentScale.Crop)
     } else {
         Box(modifier.background(Color(0xFFE8F2FF)), contentAlignment = Alignment.Center) {
-            Text("썸네일 없음", color = Color(0xFF667085))
+            Text(placeholderText, color = Color(0xFF667085))
         }
     }
 }

@@ -177,6 +177,7 @@ fun AppNavHost(
                     composable(AppRoute.Chatbot.route) { AiChatbotScreen(chatViewModel) }
                     composable(AppRoute.ArtworkSearch.route) {
                         ArtworkSearchScreen(
+                            onCancelClick = { navController.popBackStack() },
                             onArtworkClick = { productId ->
                                 navController.navigate(AppRoute.ArtworkDetail.createRoute(productId))
                             },
