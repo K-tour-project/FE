@@ -43,6 +43,7 @@ import com.everytrip.app.feature.mypage.presentation.MyPageRoute
 import com.everytrip.app.feature.mypage.presentation.SettingsRoute
 import com.everytrip.app.feature.region.presentation.search.RegionSearchScreen
 import com.everytrip.app.feature.region.presentation.search.RegionSearchViewModel
+import com.everytrip.app.feature.splash.presentation.SplashScreen
 import com.everytrip.app.ui.theme.PrimaryBlue
 
 @Composable
@@ -91,7 +92,7 @@ fun AppNavHost(
     }
 
     when (loginUiState.sessionCheckState) {
-        SessionCheckState.Checking -> LoadingScreen()
+        SessionCheckState.Checking -> SplashScreen()
         SessionCheckState.RetryableError -> {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = PrimaryBlue)
@@ -264,12 +265,5 @@ private fun NavHostController.navigateBottom(route: AppRoute) {
         popUpTo(AppRoute.Home.route) { saveState = true }
         launchSingleTop = true
         restoreState = true
-    }
-}
-
-@Composable
-private fun LoadingScreen() {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(color = PrimaryBlue)
     }
 }
