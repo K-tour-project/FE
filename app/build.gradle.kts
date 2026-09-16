@@ -1,9 +1,9 @@
+import com.android.build.api.dsl.ApplicationExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
@@ -14,7 +14,16 @@ val localProperties = Properties().apply {
 val kakaoNativeAppKey =
     localProperties.getProperty("KAKAO_NATIVE_APP_KEY") ?: ""
 
-android {
+val backendBaseUrl =
+    localProperties.getProperty("BACKEND_BASE_URL") ?: ""
+
+val chatBaseUrl =
+    localProperties.getProperty("CHAT_BASE_URL") ?: "http://10.0.2.2:8001/"
+
+val googleWebClientId =
+    localProperties.getProperty("GOOGLE_WEB_CLIENT_ID") ?: ""
+
+extensions.configure<ApplicationExtension>("android") {
     namespace = "com.everytrip.app"
     compileSdk {
         version = release(37)
@@ -27,17 +36,37 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+        manifestPlaceholders["KAKAO_NATIVE_APP_KEY"] = kakaoNativeAppKey
+        manifestPlaceholders["usesCleartextTraffic"] = false
+
         buildConfigField(
             "String",
             "KAKAO_NATIVE_APP_KEY",
             "\"$kakaoNativeAppKey\""
         )
 
+        buildConfigField(
+            "String",
+            "BACKEND_BASE_URL",
+            "\"$backendBaseUrl\""
+        )
+
+        buildConfigField(
+            "String",
+            "CHAT_BASE_URL",
+            "\"$chatBaseUrl\""
+        )
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
     }
 
     buildTypes {
+        debug {
+            manifestPlaceholders["usesCleartextTraffic"] = true
+        }
         release {
+            manifestPlaceholders["usesCleartextTraffic"] = false
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -65,6 +94,10 @@ kotlin {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.paging.runtime)
+    implementation(libs.androidx.paging.compose)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
@@ -73,6 +106,15 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.kakao.map)
+    implementation(libs.kakao.user)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.google.id)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging.interceptor)
+    implementation(libs.gson)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

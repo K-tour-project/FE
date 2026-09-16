@@ -1,1 +1,269 @@
+package com.everytrip.app.core.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.everytrip.app.core.designsystem.component.AppBottomNavigationBar
+import com.everytrip.app.core.designsystem.component.NetworkErrorDialog
+import com.everytrip.app.feature.artwork.presentation.search.ArtworkSearchScreen
+import com.everytrip.app.feature.artwork.presentation.detail.ArtworkDetailRoute
+import com.everytrip.app.feature.auth.presentation.login.LoginScreen
+import com.everytrip.app.feature.auth.presentation.login.LoginViewModel
+import com.everytrip.app.feature.auth.presentation.login.SessionCheckState
+import com.everytrip.app.feature.auth.presentation.signup.SignUpScreen
+import com.everytrip.app.feature.auth.presentation.signup.SignUpViewModel
+import com.everytrip.app.feature.chatbot.presentation.AiChatbotScreen
+import com.everytrip.app.feature.chatbot.presentation.ChatViewModel
+import com.everytrip.app.feature.home.presentation.HomeScreen
+import com.everytrip.app.feature.home.presentation.HomeViewModel
+import com.everytrip.app.feature.mypage.presentation.FavoriteViewModel
+import com.everytrip.app.feature.mypage.presentation.MyPageRoute
+import com.everytrip.app.feature.mypage.presentation.SettingsRoute
+import com.everytrip.app.feature.region.presentation.search.RegionSearchScreen
+import com.everytrip.app.feature.region.presentation.search.RegionSearchViewModel
+import com.everytrip.app.feature.splash.presentation.SplashScreen
+import com.everytrip.app.ui.theme.PrimaryBlue
+
+@Composable
+fun AppNavHost(
+    loginViewModel: LoginViewModel,
+    signUpViewModel: SignUpViewModel,
+    regionSearchViewModel: RegionSearchViewModel,
+    chatViewModel: ChatViewModel,
+    favoriteViewModel: FavoriteViewModel,
+    onKakaoLoginClick: () -> Unit,
+    onGoogleLoginClick: () -> Unit,
+    onExitClick: () -> Unit,
+    navController: NavHostController = rememberNavController(),
+) {
+    val loginUiState by loginViewModel.uiState.collectAsState()
+    val signUpUiState by signUpViewModel.uiState.collectAsState()
+    val favoriteUiState by favoriteViewModel.uiState.collectAsState()
+    val regionUiState by regionSearchViewModel.uiState.collectAsState()
+    var isGuestMode by remember { mutableStateOf(false) }
+
+    LaunchedEffect(signUpUiState.signupCompleted) {
+        if (signUpUiState.signupCompleted) {
+            navController.navigate(AppRoute.Login.route) {
+                popUpTo(AppRoute.SignUp.route) { inclusive = true }
+                launchSingleTop = true
+            }
+            signUpViewModel.consumeSignupCompleted()
+        }
+    }
+
+    LaunchedEffect(loginUiState.sessionCheckState, isGuestMode) {
+        when {
+            loginUiState.sessionCheckState == SessionCheckState.Authenticated || isGuestMode -> {
+                if (loginUiState.sessionCheckState == SessionCheckState.Authenticated) {
+                    favoriteViewModel.refresh()
+                }
+                navController.navigate(AppRoute.Home.route) {
+                    popUpTo(AppRoute.Login.route) { inclusive = true }
+                    launchSingleTop = true
+                }
+            }
+            loginUiState.sessionCheckState == SessionCheckState.Unauthenticated -> {
+                navController.navigate(AppRoute.Login.route) { launchSingleTop = true }
+            }
+        }
+    }
+
+    when (loginUiState.sessionCheckState) {
+        SessionCheckState.Checking -> SplashScreen()
+        SessionCheckState.RetryableError -> {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = PrimaryBlue)
+                NetworkErrorDialog(
+                    onExitClick = onExitClick,
+                    onRetryClick = loginViewModel::checkExistingSession,
+                )
+            }
+        }
+        else -> {
+            val backStackEntry by navController.currentBackStackEntryAsState()
+            val currentRoute = backStackEntry?.destination?.route
+            val selectedBottomIndex = AppRoute.bottomRoutes.indexOfFirst { it.route == currentRoute }
+            val isImeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+            val isInitialPlacesError = currentRoute == AppRoute.RegionSearch.route &&
+                regionUiState.places.isEmpty() && regionUiState.placesErrorMessage != null
+
+            Scaffold(
+                bottomBar = {
+                    if (selectedBottomIndex >= 0 && !isImeVisible && !isInitialPlacesError) {
+                        AppBottomNavigationBar(
+                            selectedIndex = selectedBottomIndex,
+                            onItemSelected = { index ->
+                                navController.navigate(AppRoute.bottomRoutes[index].route) {
+                                    popUpTo(AppRoute.Home.route) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                        )
+                    }
+                },
+            ) { innerPadding ->
+                NavHost(
+                    navController = navController,
+                    startDestination = AppRoute.Login.route,
+                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                ) {
+                    composable(AppRoute.Login.route) {
+                        LoginScreen(
+                            uiState = loginUiState,
+                            onBackClick = {},
+                            onLoginClick = loginViewModel::login,
+                            onNavigateToSignUp = { navController.navigate(AppRoute.SignUp.route) },
+                            onGuestLoginClick = { isGuestMode = true },
+                            onKakaoLoginClick = onKakaoLoginClick,
+                            onGoogleLoginClick = onGoogleLoginClick,
+                            onMessageShown = loginViewModel::clearMessage,
+                        )
+                    }
+                    composable(AppRoute.SignUp.route) {
+                        SignUpScreen(
+                            uiState = signUpUiState,
+                            onBackClick = { navController.popBackStack() },
+                            onSendCodeClick = signUpViewModel::sendCode,
+                            onVerifyCodeClick = signUpViewModel::verifyCode,
+                            onSignUpClick = signUpViewModel::signUp,
+                            onMessageShown = signUpViewModel::clearMessage,
+                        )
+                    }
+                    composable(AppRoute.Home.route) {
+                        val homeViewModel: HomeViewModel = viewModel()
+                        val homeUiState by homeViewModel.uiState.collectAsState()
+                        HomeScreen(
+                            uiState = homeUiState,
+                            onNavigateToSearch = { navController.navigateBottom(AppRoute.ArtworkSearch) },
+                            onNavigateToRegionSearch = { navController.navigateBottom(AppRoute.RegionSearch) },
+                            onNavigateToDestination = { detailPath ->
+                                val contentId = detailPath.substringAfterLast('/').takeIf(String::isNotBlank)
+                                if (detailPath.startsWith("/tourism-places/") && contentId != null) {
+                                    regionSearchViewModel.selectRelatedPlace(contentId)
+                                    navController.navigateBottom(AppRoute.RegionSearch)
+                                }
+                            },
+                            onNavigateToWork = { detailPath ->
+                                detailPath.substringAfterLast('/').toIntOrNull()?.let { productId ->
+                                    navController.navigate(AppRoute.ArtworkDetail.createRoute(productId))
+                                }
+                            },
+                            onRetry = homeViewModel::loadHome,
+                        )
+                    }
+                    composable(AppRoute.Chatbot.route) { AiChatbotScreen(chatViewModel) }
+                    composable(AppRoute.ArtworkSearch.route) {
+                        ArtworkSearchScreen(
+                            onCancelClick = { navController.popBackStack() },
+                            onArtworkClick = { productId ->
+                                navController.navigate(AppRoute.ArtworkDetail.createRoute(productId))
+                            },
+                        )
+                    }
+                    composable(AppRoute.RegionSearch.route) {
+                        RegionSearchScreen(
+                            viewModel = regionSearchViewModel,
+                            onTitleClick = { navController.navigateBottom(AppRoute.Home) },
+                            onBackClick = {
+                                if (!navController.popBackStack()) {
+                                    navController.navigateBottom(AppRoute.Home)
+                                }
+                            },
+                            favoriteState = favoriteUiState,
+                            onTogglePlace = favoriteViewModel::togglePlace,
+                            onToggleTourism = favoriteViewModel::toggleTourism,
+                            onToggleProduct = favoriteViewModel::toggleProduct,
+                            onArtworkClick = { productId ->
+                                regionSearchViewModel.closePlaceDetail()
+                                navController.navigate(AppRoute.ArtworkDetail.createRoute(productId))
+                            },
+                        )
+                    }
+                    composable(AppRoute.MyPage.route) {
+                        MyPageRoute(
+                            viewModel = favoriteViewModel,
+                            onSettingsClick = { navController.navigate(AppRoute.Settings.route) },
+                            onPlaceClick = { detailPath ->
+                                val id = detailPath.substringAfterLast('/').takeIf(String::isNotBlank)
+                                when {
+                                    detailPath.startsWith("/places/") -> id?.toIntOrNull()
+                                        ?.let(regionSearchViewModel::selectFilmingPlace)
+                                    detailPath.startsWith("/tourism-places/") -> id
+                                        ?.let(regionSearchViewModel::selectRelatedPlace)
+                                }
+                                navController.navigateBottom(AppRoute.RegionSearch)
+                            },
+                            onWorkClick = { detailPath ->
+                                detailPath.substringAfterLast('/').toIntOrNull()?.let { productId ->
+                                    navController.navigate(AppRoute.ArtworkDetail.createRoute(productId))
+                                }
+                            },
+                        )
+                    }
+                    composable(AppRoute.Settings.route) {
+                        SettingsRoute(
+                            viewModel = favoriteViewModel,
+                            authProvider = loginUiState.user?.authProvider,
+                            onBackClick = { navController.popBackStack() },
+                            onLogoutClick = {
+                                isGuestMode = false
+                                loginViewModel.logout()
+                            },
+                        )
+                    }
+                    composable(
+                        route = AppRoute.ArtworkDetail.route,
+                        arguments = listOf(navArgument("productId") { type = NavType.IntType }),
+                    ) { entry ->
+                        val productId = entry.arguments?.getInt("productId") ?: return@composable
+                        ArtworkDetailRoute(
+                            productId = productId,
+                            onBackClick = { navController.popBackStack() },
+                            onFilmingPlaceClick = { placeId ->
+                                regionSearchViewModel.selectFilmingPlace(placeId)
+                                navController.navigateBottom(AppRoute.RegionSearch)
+                            },
+                            onRelatedArtworkClick = { relatedId ->
+                                navController.navigate(AppRoute.ArtworkDetail.createRoute(relatedId))
+                            },
+                            isSaved = { it in favoriteUiState.savedProductIds },
+                            onSaveClick = favoriteViewModel::toggleProduct,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun NavHostController.navigateBottom(route: AppRoute) {
+    navigate(route.route) {
+        popUpTo(AppRoute.Home.route) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
+}

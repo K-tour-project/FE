@@ -9,27 +9,51 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetScaffoldState
+import androidx.compose.material3.rememberStandardBottomSheetState
+import com.everytrip.app.feature.region.presentation.detail.RegionDetailScreen
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.everytrip.app.core.designsystem.component.MainTopBar
+import com.everytrip.app.core.designsystem.component.ApiErrorScreen
+import com.everytrip.app.feature.mypage.presentation.MyPageUiState
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegionSearchScreen(
-    viewModel: RegionSearchViewModel,
-    onRegionPlaceClick: (FilteredPlace) -> Unit,
     modifier: Modifier = Modifier,
+    viewModel: RegionSearchViewModel,
+    onTitleClick: () -> Unit = {},
+    onBackClick: () -> Unit = {},
+    favoriteState: MyPageUiState = MyPageUiState(),
+    onTogglePlace: (Int) -> Unit = {},
+    onToggleTourism: (String) -> Unit = {},
+    onToggleProduct: (Int) -> Unit = {},
+    onArtworkClick: (Int) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val places = viewModel.places.collectAsLazyPagingItems()
+    val displayState = uiState.copy(places = places.itemSnapshotList.items)
     val context = LocalContext.current
-    var filterState by remember { mutableStateOf(RegionFilterState()) }
+    val bottomSheetState = rememberStandardBottomSheetState(
+        initialValue = SheetValue.PartiallyExpanded,
+        skipHiddenState = true,
+    )
+    val bottomSheetScaffoldState = rememberBottomSheetScaffoldState(bottomSheetState)
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
     ) { permissions ->
@@ -51,29 +75,107 @@ fun RegionSearchScreen(
         }
     }
 
+    LaunchedEffect(uiState.selectedRegionId) {
+        if (uiState.selectedRegionId != null) {
+            bottomSheetState.partialExpand()
+        }
+    }
+
+    if (places.itemCount == 0 && places.loadState.refresh is LoadState.Error) {
+        ApiErrorScreen(
+            onRetryClick = places::retry,
+            onBackClick = onBackClick,
+            modifier = modifier.background(Color.White),
+        )
+        return
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(Color.White),
     ) {
+        MainTopBar(
+            title = "Every Trip",
+            onTitleClick = onTitleClick,
+        )
+
         RegionFilterBar(
-            state = filterState,
+            state = RegionFilterState(
+                province = uiState.selectedSido?.name.orEmpty(),
+                city = uiState.selectedSigungu?.name.orEmpty(),
+            ),
+            provinceOptions = uiState.sidos.map { it.name },
+            cityOptions = uiState.sigungus.map { it.name },
+            isCityEnabled = uiState.selectedSido?.hasChildren == true,
+            isProvinceLoading = uiState.isLoadingSidos,
+            isCityLoading = uiState.isLoadingSigungus,
+            onProvinceDropdownClick = viewModel::loadSidos,
             onProvinceSelected = { province ->
-                filterState = filterState.copy(province = province)
+                viewModel.onSidoSelected(province)
             },
             onCitySelected = { city ->
-                filterState = filterState.copy(city = city)
+                viewModel.onSigunguSelected(city)
             },
-            onDistrictSelected = {},
             modifier = Modifier.fillMaxWidth(),
         )
 
-        RegionKakaoMap(
-            uiState = uiState,
-            onMapError = {},
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
+        if (uiState.selectedRegionId != null) {
+            BottomSheetScaffold(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                scaffoldState = bottomSheetScaffoldState,
+                sheetPeekHeight = 320.dp,
+                sheetContent = {
+                    RegionBottomSheet(
+                        state = displayState,
+                        places = places,
+                        isExpanded = bottomSheetState.currentValue == SheetValue.Expanded,
+                        onPlaceClick = viewModel::selectRelatedPlace,
+                    )
+                },
+            ) { innerPadding ->
+                RegionKakaoMap(
+                    uiState = displayState,
+                    onMapError = {},
+                    onPlaceClick = viewModel::selectRelatedPlace,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                )
+            }
+        } else {
+            RegionKakaoMap(
+                uiState = uiState,
+                onMapError = {},
+                onPlaceClick = viewModel::selectPlace,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            )
+        }
+        uiState.regionErrorMessage?.let { Text("지역 정보를 불러오지 못했어요. 지역을 다시 선택해 주세요.") }
+    }
+    if (uiState.selectedContentId != null || uiState.selectedPlaceId != null ||
+        uiState.selectedProductId != null) {
+        RegionDetailScreen(
+            state = uiState,
+            onClose = viewModel::closePlaceDetail,
+            onRetry = {
+                uiState.selectedPlaceId?.let(viewModel::selectFilmingPlace)
+                    ?: uiState.selectedProductId?.let(viewModel::selectContent)
+                    ?: uiState.selectedContentId?.let(viewModel::selectRelatedPlace)
+            },
+            onContentClick = onArtworkClick,
+            onFilmingPlaceClick = viewModel::selectFilmingPlace,
+            onRelatedPlaceClick = viewModel::selectRelatedPlace,
+            favoritePlaceIds = favoriteState.favoritePlaceIds,
+            favoriteTourismIds = favoriteState.favoriteTourismIds,
+            savedProductIds = favoriteState.savedProductIds,
+            onTogglePlace = onTogglePlace,
+            onToggleTourism = onToggleTourism,
+            onToggleProduct = onToggleProduct,
         )
     }
 }

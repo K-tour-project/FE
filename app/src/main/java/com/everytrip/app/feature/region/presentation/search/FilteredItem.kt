@@ -43,9 +43,10 @@ import com.everytrip.app.ui.theme.SecondaryText
 
 data class FilteredPlace(
     val name: String,
-    val distanceText: String,
+    val playground: String,
     val region: String,
     val imageResId: Int? = null,
+    val thumbnailUrl: String? = null,
 )
 
 enum class FilteredItemLayout {
@@ -84,7 +85,7 @@ private fun BottomTabFilteredItem(
     Card(
         modifier = modifier
             .width(132.dp)
-            .height(232.dp)
+            .height(200.dp)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -97,13 +98,13 @@ private fun BottomTabFilteredItem(
                 shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(104.dp),
+                    .height(96.dp),
             )
 
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 14.dp, vertical = 14.dp),
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
             ) {
                 Text(
                     text = place.name,
@@ -113,15 +114,19 @@ private fun BottomTabFilteredItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(modifier = Modifier.height(18.dp))
+
+                Spacer(modifier = Modifier.height(14.dp))
+
                 Text(
-                    text = place.distanceText,
+                    text = place.playground,
                     color = SecondaryText,
                     fontSize = 16.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+
+                Spacer(modifier = Modifier.height(3.dp))
+
                 Text(
                     text = place.region,
                     color = SecondaryText,
@@ -174,7 +179,7 @@ private fun FullScreenFilteredItem(
                 )
                 Spacer(modifier = Modifier.height(14.dp))
                 Text(
-                    text = place.distanceText,
+                    text = place.playground,
                     color = SecondaryText,
                     fontSize = 15.sp,
                     maxLines = 1,
@@ -199,7 +204,13 @@ private fun PlaceImage(
     shape: Shape,
     modifier: Modifier = Modifier,
 ) {
-    if (place.imageResId != null) {
+    if (!place.thumbnailUrl.isNullOrBlank()) {
+        TourismImage(
+            url = place.thumbnailUrl,
+            name = place.name,
+            modifier = modifier.clip(shape),
+        )
+    } else if (place.imageResId != null) {
         Image(
             painter = painterResource(id = place.imageResId),
             contentDescription = place.name,
@@ -237,7 +248,7 @@ private fun BottomTabFilteredItemPreview() {
     FilteredItem(
         place = FilteredPlace(
             name = "수원화성",
-            distanceText = "0.8km",
+            playground = "촬영지",
             region = "팔달구",
         ),
         layout = FilteredItemLayout.BottomTab,
@@ -252,7 +263,7 @@ private fun FullScreenFilteredItemPreview() {
     FilteredItem(
         place = FilteredPlace(
             name = "행궁동 벽화마을",
-            distanceText = "1.2km",
+            playground = "관광지",
             region = "팔달구",
         ),
         layout = FilteredItemLayout.FullScreen,
@@ -260,4 +271,3 @@ private fun FullScreenFilteredItemPreview() {
         modifier = Modifier.padding(16.dp),
     )
 }
-

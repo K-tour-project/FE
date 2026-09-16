@@ -10,16 +10,35 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
 import android.os.Looper
+import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import com.everytrip.app.feature.region.data.model.RegionBoundary
+import com.everytrip.app.feature.region.data.repository.RegionRepository
+import com.everytrip.app.feature.region.data.repository.RegionRepositoryImpl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class RegionSearchViewModel(
     application: Application,
+    private val regionRepository: RegionRepository = RegionRepositoryImpl(),
 ) : AndroidViewModel(application) {
+
+    constructor(application: Application) : this(
+        application = application,
+        regionRepository = RegionRepositoryImpl(),
+    )
 
     private val locationManager =
         application.getSystemService(Context.LOCATION_SERVICE) as LocationManager
@@ -32,11 +51,110 @@ class RegionSearchViewModel(
     val uiState: StateFlow<RegionSearchUiState> = _uiState.asStateFlow()
 
     private var currentLocationListener: LocationListener? = null
+    private var regionBoundaryRequestId = 0
+    private var sigungusRequestId = 0
+    private val tourism = RegionTourismController(regionRepository, _uiState, viewModelScope)
+
+    val places = uiState
+        .map { it.selectedRegionId }
+        .distinctUntilChanged()
+        .flatMapLatest { regionId ->
+            if (regionId == null) flowOf(PagingData.empty())
+            else regionRepository.getTourismPlacesPaged(regionId) { total ->
+                _uiState.update { it.copy(totalPlaces = total) }
+            }
+        }
+        .cachedIn(viewModelScope)
+
+    private fun resetPlaces() {
+        tourism.closePlaceDetail()
+        _uiState.update { it.copy(totalPlaces = 0) }
+    }
+    fun selectPlace(contentId: String) = tourism.selectPlace(contentId)
+    fun closePlaceDetail() = tourism.closePlaceDetail()
+    fun selectFilmingPlace(placeId: Int) = tourism.selectFilmingPlace(placeId)
+    fun selectContent(productId: Int) = tourism.selectContent(productId)
+    fun selectRelatedPlace(contentId: String) = tourism.selectRelatedPlace(contentId)
 
     init {
         if (_uiState.value.isLocationPermissionGranted) {
             loadCurrentLocation()
         }
+    }
+
+    fun loadSidos() {
+        if (_uiState.value.isLoadingSidos) {
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoadingSidos = true,
+                    regionErrorMessage = null,
+                )
+            }
+            runCatching {
+                regionRepository.getSidos()
+            }.onSuccess { sidos ->
+                _uiState.update {
+                    it.copy(
+                        sidos = sidos,
+                        isLoadingSidos = false,
+                    )
+                }
+            }.onFailure { throwable ->
+                Log.e(TAG, "Failed to load sidos", throwable)
+                _uiState.update {
+                    it.copy(
+                        isLoadingSidos = false,
+                        regionErrorMessage = throwable.message,
+                    )
+                }
+            }
+        }
+    }
+
+    fun onSidoSelected(sidoName: String) {
+        val sido = _uiState.value.sidos.firstOrNull { it.name == sidoName } ?: return
+        regionBoundaryRequestId++
+        sigungusRequestId++
+        resetPlaces()
+
+        _uiState.update {
+            it.copy(
+                selectedSido = sido,
+                selectedSigungu = null,
+                selectedRegionId = null,
+                selectedRegionLocation = null,
+                selectedRegionPolygons = emptyList(),
+                sigungus = emptyList(),
+                isLoadingSigungus = false,
+                isLoadingRegionBounds = false,
+                regionErrorMessage = null,
+            )
+        }
+
+        if (sido.hasChildren) {
+            loadSigungus(sido.id)
+        } else {
+            loadRegionBoundary(sido.id)
+        }
+    }
+
+    fun onSigunguSelected(sigungu: String) {
+        val selectedSigungu = _uiState.value.sigungus.firstOrNull { it.name == sigungu } ?: return
+        resetPlaces()
+        _uiState.update {
+            it.copy(
+                selectedSigungu = selectedSigungu,
+                selectedRegionId = selectedSigungu.regionId,
+                selectedRegionLocation = null,
+                selectedRegionPolygons = emptyList(),
+                regionErrorMessage = null,
+            )
+        }
+        loadRegionBoundary(selectedSigungu.regionId)
     }
 
     fun onLocationPermissionResult(isGranted: Boolean) {
@@ -160,6 +278,86 @@ class RegionSearchViewModel(
         }
     }
 
+    private fun loadSigungus(sidoId: Int) {
+        val requestId = ++sigungusRequestId
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoadingSigungus = true,
+                    regionErrorMessage = null,
+                )
+            }
+            runCatching {
+                regionRepository.getSigungus(sidoId)
+            }.onSuccess { sigungus ->
+                if (requestId != sigungusRequestId) return@onSuccess
+                _uiState.update {
+                    it.copy(
+                        sigungus = sigungus,
+                        isLoadingSigungus = false,
+                    )
+                }
+            }.onFailure { throwable ->
+                Log.e(TAG, "Failed to load sigungus", throwable)
+                if (requestId != sigungusRequestId) return@onFailure
+                _uiState.update {
+                    it.copy(
+                        isLoadingSigungus = false,
+                        regionErrorMessage = throwable.message,
+                    )
+                }
+            }
+        }
+    }
+
+    private fun loadRegionBoundary(regionId: Int) {
+        val requestId = ++regionBoundaryRequestId
+        _uiState.update { it.copy(selectedRegionId = regionId) }
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    selectedRegionId = regionId,
+                    isLoadingRegionBounds = true,
+                    regionErrorMessage = null,
+                )
+            }
+            runCatching {
+                regionRepository.getBoundary(regionId)
+            }.onSuccess { boundary ->
+                if (requestId != regionBoundaryRequestId) {
+                    return@onSuccess
+                }
+                _uiState.update {
+                    it.copy(
+                        selectedRegionId = regionId,
+                        selectedRegionLocation = boundary.toRegionCoordinate(),
+                        selectedRegionPolygons = boundary.polygons,
+                        isLoadingRegionBounds = false,
+                    )
+                }
+            }.onFailure { throwable ->
+                Log.e(TAG, "Failed to load region boundary", throwable)
+                if (requestId != regionBoundaryRequestId) {
+                    return@onFailure
+                }
+                _uiState.update {
+                    it.copy(
+                        isLoadingRegionBounds = false,
+                        regionErrorMessage = throwable.message,
+                    )
+                }
+            }
+        }
+    }
+
+    private fun RegionBoundary.toRegionCoordinate(): RegionCoordinate? {
+        val centroid = centroid ?: return null
+        return RegionCoordinate(
+            latitude = centroid.latitude,
+            longitude = centroid.longitude,
+        )
+    }
+
     override fun onCleared() {
         currentLocationListener?.let(locationManager::removeUpdates)
         currentLocationListener = null
@@ -179,6 +377,7 @@ class RegionSearchViewModel(
     }
 
     private companion object {
+        const val TAG = "RegionSearchViewModel"
         const val MIN_LOCATION_UPDATE_TIME_MS = 1_000L
         const val MIN_LOCATION_UPDATE_DISTANCE_M = 1f
     }

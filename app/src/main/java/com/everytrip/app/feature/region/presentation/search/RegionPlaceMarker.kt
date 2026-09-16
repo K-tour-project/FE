@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
@@ -40,11 +41,23 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.everytrip.app.ui.theme.PrimaryBlue
+import com.everytrip.app.feature.region.data.model.TourismPlace
 
 @Immutable
 data class RegionPlaceMarkerUiModel(
     val name: String,
     val imageResId: Int? = null,
+    val thumbnailUrl: String? = null,
+    val category: String = "관광지",
+) {
+    val categoryColor: Color
+        get() = if (category == "촬영지") Color(0xFF16A34A) else PrimaryBlue
+}
+
+fun TourismPlace.toMarkerUiModel(): RegionPlaceMarkerUiModel = RegionPlaceMarkerUiModel(
+    name = name,
+    thumbnailUrl = thumbnailUrl,
+    category = category,
 )
 
 @Composable
@@ -52,9 +65,10 @@ fun RegionPlaceMarker(
     place: RegionPlaceMarkerUiModel,
     modifier: Modifier = Modifier,
     selected: Boolean = false,
+    thumbnailBitmap: ImageBitmap? = null,
     onClick: (() -> Unit)? = null,
 ) {
-    val borderColor = if (selected) PrimaryBlue else Color(0xFFE3EAF4)
+    val borderColor = if (selected) place.categoryColor else Color(0xFFE3EAF4)
     val borderWidth = if (selected) 2.dp else 1.dp
     val markerShape = RegionPlaceMarkerShape
 
@@ -66,8 +80,8 @@ fun RegionPlaceMarker(
     ) {
         Surface(
             modifier = Modifier
-                .width(246.dp)
-                .height(112.dp)
+                .width(208.dp)
+                .height(98.dp)
                 .shadow(
                     elevation = 8.dp,
                     shape = markerShape,
@@ -87,25 +101,38 @@ fun RegionPlaceMarker(
             ) {
                 MarkerThumbnail(
                     place = place,
+                    thumbnailBitmap = thumbnailBitmap,
                     modifier = Modifier.size(72.dp),
                 )
-                Text(
+                Column(
                     modifier = Modifier.weight(1f),
-                    text = place.name,
-                    color = Color(0xFF111827),
-                    fontSize = 24.sp,
-                    lineHeight = 25.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = place.name,
+                        color = Color(0xFF111827),
+                        fontSize = 20.sp,
+                        lineHeight = 25.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = place.category,
+                        color = place.categoryColor,
+                        fontSize = 16.sp,
+                        lineHeight = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                    )
+                }
             }
         }
 
         Box(
             modifier = Modifier
                 .padding(top = 4.dp)
-                .size(30.dp)
+                .size(22.dp)
                 .shadow(5.dp, CircleShape)
                 .clip(CircleShape)
                 .background(Color.White),
@@ -113,9 +140,9 @@ fun RegionPlaceMarker(
         ) {
             Box(
                 modifier = Modifier
-                    .size(18.dp)
+                    .size(16.dp)
                     .clip(CircleShape)
-                    .background(PrimaryBlue),
+                    .background(place.categoryColor),
             )
         }
     }
@@ -124,11 +151,25 @@ fun RegionPlaceMarker(
 @Composable
 private fun MarkerThumbnail(
     place: RegionPlaceMarkerUiModel,
+    thumbnailBitmap: ImageBitmap?,
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(8.dp)
 
-    if (place.imageResId != null) {
+    if (thumbnailBitmap != null) {
+        Image(
+            bitmap = thumbnailBitmap,
+            contentDescription = place.name,
+            contentScale = ContentScale.Crop,
+            modifier = modifier.clip(shape),
+        )
+    } else if (!place.thumbnailUrl.isNullOrBlank()) {
+        TourismImage(
+            url = place.thumbnailUrl,
+            name = place.name,
+            modifier = modifier.clip(shape),
+        )
+    } else if (place.imageResId != null) {
         Image(
             painter = painterResource(id = place.imageResId),
             contentDescription = place.name,
@@ -152,21 +193,16 @@ private fun MarkerThumbnail(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = place.name.markerFallbackText(),
+                text = "준비중",
                 color = PrimaryBlue,
-                fontSize = 20.sp,
+                fontSize = 16.sp,
                 lineHeight = 24.sp,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Clip,
             )
         }
     }
-}
-
-private fun String.markerFallbackText(): String {
-    val compact = filterNot { it.isWhitespace() }
-    return compact.take(2).ifBlank { "?" }
 }
 
 private object RegionPlaceMarkerShape : Shape {
@@ -203,12 +239,12 @@ private object RegionPlaceMarkerShape : Shape {
 
 @Preview(showBackground = true, backgroundColor = 0xFFF4F8FC, widthDp = 340)
 @Composable
-private fun RegionPlaceMarkerSelectedPreview() {
+private fun RegionPlaceMarkerFilmingLocationPreview() {
     RegionPlaceMarker(
         place = RegionPlaceMarkerUiModel(
-            name = "노벰버"
+            name = "노벰버",
+            category = "촬영지",
         ),
-        selected = true,
         modifier = Modifier.padding(24.dp),
     )
 }
@@ -218,7 +254,8 @@ private fun RegionPlaceMarkerSelectedPreview() {
 private fun RegionPlaceMarkerDefaultPreview() {
     RegionPlaceMarker(
         place = RegionPlaceMarkerUiModel(
-            name = "기흥역 공영 주차장"
+            name = "기흥역 공영 주차장",
+            category = "관광지",
         ),
         modifier = Modifier.padding(24.dp),
     )

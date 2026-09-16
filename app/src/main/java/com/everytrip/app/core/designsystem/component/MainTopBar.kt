@@ -1,10 +1,15 @@
 package com.everytrip.app.core.designsystem.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -24,23 +29,41 @@ import com.everytrip.app.ui.theme.PrimaryBlue
 @Composable
 fun MainTopBar(
     title: String,
-    icon: ImageVector,
-    iconContentDescription: String,
-    onIconClick: () -> Unit,
-    showBadge: Boolean = false
+    icon: ImageVector? = null,
+    iconContentDescription: String? = null,
+    onIconClick: () -> Unit = {},
+    onTitleClick: () -> Unit = {},
+    showBadge: Boolean = false,
+    showActionBorder: Boolean = false,
 ) {
     TopAppBar(
+        modifier = Modifier.height(65.dp),
+        // Activity에서 이미 시스템 상태바 영역을 처리하므로 TopAppBar의 중복 상단 여백을 제거합니다.
+        windowInsets = WindowInsets(0, 0, 0, 0),
         title = {
             Text(
                 text = title,
-                fontSize = 27.sp,
+                fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
-                color = PrimaryBlue
+                color = PrimaryBlue,
+                modifier = Modifier
+                    .clickable(onClick = onTitleClick),
             )
         },
         actions = {
-            Box {
-                IconButton(onClick = onIconClick) {
+            if (icon != null) Box {
+                IconButton(
+                    onClick = onIconClick,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .then(
+                            if (showActionBorder) Modifier.border(
+                                width = 1.dp,
+                                color = PrimaryBlue,
+                                shape = RoundedCornerShape(14.dp),
+                            ) else Modifier
+                        ),
+                ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = iconContentDescription,
