@@ -77,9 +77,9 @@ class FavoriteRepository(context: Context) {
         )
     }
 
-    suspend fun updateNickname(nickname: String): MyPageData = authenticated {
+    suspend fun updateNickname(nickname: String): UpdatedProfile = authenticated {
         service.updateNickname(NicknameRequest(nickname.trim()), it)
-    }.toMyPage()
+    }.toUpdatedProfile()
 
     suspend fun changePassword(currentPassword: String, newPassword: String) = authenticated {
         service.changePassword(PasswordChangeRequest(currentPassword, newPassword), it)
@@ -87,15 +87,15 @@ class FavoriteRepository(context: Context) {
 
     suspend fun deleteAccount() = authenticated { service.deleteAccount(it) }
 
-    suspend fun updateProfileImage(bytes: ByteArray, mimeType: String, fileName: String): MyPageData {
+    suspend fun updateProfileImage(bytes: ByteArray, mimeType: String, fileName: String): UpdatedProfile {
         val body = bytes.toRequestBody(mimeType.toMediaType())
         val part = MultipartBody.Part.createFormData("profile_image", fileName, body)
-        return authenticated { service.updateProfileImage(part, it) }.toMyPage()
+        return authenticated { service.updateProfileImage(part, it) }.toUpdatedProfile()
     }
 
-    suspend fun removeProfileImage(): MyPageData = authenticated {
+    suspend fun removeProfileImage(): UpdatedProfile = authenticated {
         service.removeProfileImage("true".toRequestBody("text/plain".toMediaType()), it)
-    }.toMyPage()
+    }.toUpdatedProfile()
 
     private suspend fun <T> authenticated(block: suspend (AuthToken) -> T): T =
         session.executeAuthenticated { token ->
@@ -136,6 +136,7 @@ class FavoriteRepository(context: Context) {
         val root = asObjectOrNull() ?: JsonObject()
         val profile = root.obj("user") ?: root.obj("profile") ?: root
         return MyPageData(
+            userId = profile.intOrNull("user_id"),
             nickname = profile.string("nickname"),
             email = profile.string("email"),
             profileImageUrl = profile.stringOrNull("profile_image_url"),
@@ -145,6 +146,17 @@ class FavoriteRepository(context: Context) {
                 ?: root.int("saved_product_count"),
             favoritePlaces = root.items("favorite_places", "favorites", "items")
                 .mapNotNull { it.asObjectOrNull()?.toFavoritePlace() },
+        )
+    }
+
+    private fun JsonElement.toUpdatedProfile(): UpdatedProfile {
+        val root = asObjectOrNull() ?: error("Profile response is not an object")
+        val profile = root.obj("user") ?: root.obj("profile") ?: root
+        return UpdatedProfile(
+            userId = profile.intOrNull("user_id") ?: error("Missing user_id"),
+            nickname = profile.stringOrNull("nickname") ?: error("Missing nickname"),
+            email = profile.stringOrNull("email") ?: error("Missing email"),
+            profileImageUrl = profile.stringOrNull("profile_image_url"),
         )
     }
 

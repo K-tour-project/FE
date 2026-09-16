@@ -8,7 +8,14 @@ data class PasswordChangeRequest(
     val currentPassword: String,
     val newPassword: String,
 )
+data class UpdatedProfile(
+    val userId: Int,
+    val nickname: String,
+    val email: String,
+    val profileImageUrl: String?,
+)
 data class MyPageData(
+    val userId: Int? = null,
     val nickname: String = "",
     val email: String = "",
     val profileImageUrl: String? = null,

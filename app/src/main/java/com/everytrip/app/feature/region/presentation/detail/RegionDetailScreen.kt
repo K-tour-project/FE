@@ -39,7 +39,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
@@ -59,6 +58,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import androidx.core.text.HtmlCompat
 import com.everytrip.app.core.designsystem.component.DetailTopBar
+import com.everytrip.app.core.designsystem.component.ApiErrorScreen
 import com.everytrip.app.feature.region.data.model.ContentSummary
 import com.everytrip.app.feature.region.data.model.categoryLabel
 import com.everytrip.app.feature.region.data.model.PlaceDetail
@@ -105,10 +105,9 @@ fun RegionDetailScreen(
                     state.isLoadingDetail -> CircularProgressIndicator(
                         Modifier.align(Alignment.Center), color = PrimaryBlue,
                     )
-                    state.detailErrorMessage != null -> ErrorDetail(
-                        message = state.detailErrorMessage,
-                        onClose = onClose,
-                        onRetry = onRetry,
+                    state.detailErrorMessage != null -> ApiErrorScreen(
+                        onRetryClick = onRetry,
+                        onBackClick = onClose,
                     )
                     state.filmingPlaceDetail != null -> FilmingPlaceContent(
                         place = state.filmingPlaceDetail,
@@ -382,15 +381,6 @@ private fun RelatedPlaceCarousel(places: List<RelatedPlace>, onClick: (String) -
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ErrorDetail(message: String, onClose: () -> Unit, onRetry: () -> Unit) {
-    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center) {
-        Text(message, color = MaterialTheme.colorScheme.error)
-        Row { TextButton(onClick = onClose) { Text("닫기") }; TextButton(onClick = onRetry) { Text("다시 시도") } }
     }
 }
 

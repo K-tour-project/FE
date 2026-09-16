@@ -5,6 +5,7 @@ import com.everytrip.app.feature.mypage.data.SavedProductData
 
 data class MyPageUiState(
     val myPage: MyPageData = MyPageData(),
+    val profileImageRevision: Int = 0,
     val savedProducts: List<SavedProductData> = emptyList(),
     val favoritePlaceIds: Set<Int> = emptySet(),
     val favoriteTourismIds: Set<String> = emptySet(),

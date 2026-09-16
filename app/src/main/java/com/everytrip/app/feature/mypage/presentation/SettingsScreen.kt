@@ -102,6 +102,7 @@ fun SettingsRoute(
         profileName = state.myPage.nickname.ifBlank { "사용자" },
         profileEmail = state.myPage.email,
         profileImageUrl = state.myPage.profileImageUrl,
+        profileImageRevision = state.profileImageRevision,
         authProvider = authProvider,
         isLoading = state.isSettingsLoading,
         message = state.settingsMessage,
@@ -122,6 +123,7 @@ fun SettingsScreen(
     profileName: String = "lee neng",
     profileEmail: String = "leeneng@example.com",
     profileImageUrl: String? = null,
+    profileImageRevision: Int = 0,
     authProvider: String? = "local",
     isLoading: Boolean = false,
     message: String? = null,
@@ -158,7 +160,7 @@ fun SettingsScreen(
             contentPadding = PaddingValues(start = 20.dp, top = 12.dp, end = 20.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item { SettingsProfileCard(profileName, profileEmail, profileImageUrl) { profileDialog = true } }
+            item { SettingsProfileCard(profileName, profileEmail, profileImageUrl, profileImageRevision) { profileDialog = true } }
             item {
                 SettingsSection("계정 관리", listOf(
                     SettingItem(Icons.Outlined.Edit, "닉네임 변경", onClick = { nicknameDialog = true }),
@@ -443,6 +445,7 @@ private fun SettingsProfileCard(
     name: String,
     email: String,
     imageUrl: String?,
+    imageRevision: Int,
     onEditClick: () -> Unit,
 ) {
     Card(
@@ -460,7 +463,7 @@ private fun SettingsProfileCard(
                 modifier = Modifier.size(76.dp).clip(CircleShape).background(Color(0xFFE6F1FF)),
                 contentAlignment = Alignment.Center,
             ) {
-                val bitmap by produceState<android.graphics.Bitmap?>(null, imageUrl) {
+                val bitmap by produceState<android.graphics.Bitmap?>(null, imageUrl, imageRevision) {
                     value = loadTourismBitmap(imageUrl)
                 }
                 bitmap?.let {

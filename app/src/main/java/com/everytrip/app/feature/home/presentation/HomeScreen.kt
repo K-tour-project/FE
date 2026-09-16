@@ -3,10 +3,13 @@ package com.everytrip.app.feature.home.presentation
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -22,13 +25,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.everytrip.app.core.designsystem.component.MainTopBar
+import com.everytrip.app.R
 import com.everytrip.app.feature.region.presentation.search.TourismImage
 import com.everytrip.app.ui.theme.Border
 import com.everytrip.app.ui.theme.PrimaryBlue
@@ -133,12 +139,35 @@ fun CategoryItem(modifier: Modifier, label: String, icon: ImageVector, onClick: 
 
 @Composable
 private fun PromotionBanner() {
-    Box(Modifier.fillMaxWidth().padding(horizontal = 14.dp).height(132.dp).background(Brush.horizontalGradient(listOf(Color(0xFFEAF5FF), Color(0xFFC8E6F8), Color(0xFF7CB4D9))), RoundedCornerShape(18.dp))) {
-        Column(Modifier.align(Alignment.CenterStart).padding(start = 22.dp)) {
-            Text("콘텐츠로 떠나는 여행", color = Color(0xFF102B4C), fontSize = 24.sp, fontWeight = FontWeight.Black)
-            Spacer(Modifier.height(8.dp)); Text("영화·드라마 촬영지와 여행 코스를 한 번에", color = Color(0xFF4C6178), fontSize = 13.sp)
+    val banners = listOf(R.drawable.banner1, R.drawable.banner2, R.drawable.banner3, R.drawable.banner4)
+    val pagerState = rememberPagerState(pageCount = { banners.size })
+
+    Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxWidth().height(132.dp).clip(RoundedCornerShape(18.dp)),
+        ) { page ->
+            Image(
+                painter = painterResource(banners[page]),
+                contentDescription = "배너 ${page + 1}/${banners.size}",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
         }
-        Icon(Icons.Default.Place, null, tint = Color.White.copy(alpha = .76f), modifier = Modifier.align(Alignment.CenterEnd).padding(end = 22.dp).size(72.dp))
+        Spacer(Modifier.height(10.dp))
+        DotIndicator(pageCount = banners.size, currentPage = pagerState.currentPage)
+    }
+}
+
+@Composable
+private fun DotIndicator(pageCount: Int, currentPage: Int) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+        repeat(pageCount) { page ->
+            Box(
+                Modifier.size(7.dp).clip(CircleShape)
+                    .background(if (page == currentPage) PrimaryBlue else Color(0xFFD1D5DB))
+            )
+        }
     }
 }
 

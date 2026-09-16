@@ -11,9 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -62,7 +59,6 @@ fun AppNavHost(
     val signUpUiState by signUpViewModel.uiState.collectAsState()
     val favoriteUiState by favoriteViewModel.uiState.collectAsState()
     val regionUiState by regionSearchViewModel.uiState.collectAsState()
-    var isGuestMode by remember { mutableStateOf(false) }
 
     LaunchedEffect(signUpUiState.signupCompleted) {
         if (signUpUiState.signupCompleted) {
@@ -74,12 +70,10 @@ fun AppNavHost(
         }
     }
 
-    LaunchedEffect(loginUiState.sessionCheckState, isGuestMode) {
+    LaunchedEffect(loginUiState.sessionCheckState) {
         when {
-            loginUiState.sessionCheckState == SessionCheckState.Authenticated || isGuestMode -> {
-                if (loginUiState.sessionCheckState == SessionCheckState.Authenticated) {
-                    favoriteViewModel.refresh()
-                }
+            loginUiState.sessionCheckState == SessionCheckState.Authenticated -> {
+                favoriteViewModel.refresh()
                 navController.navigate(AppRoute.Home.route) {
                     popUpTo(AppRoute.Login.route) { inclusive = true }
                     launchSingleTop = true
@@ -137,7 +131,6 @@ fun AppNavHost(
                             onBackClick = {},
                             onLoginClick = loginViewModel::login,
                             onNavigateToSignUp = { navController.navigate(AppRoute.SignUp.route) },
-                            onGuestLoginClick = { isGuestMode = true },
                             onKakaoLoginClick = onKakaoLoginClick,
                             onGoogleLoginClick = onGoogleLoginClick,
                             onMessageShown = loginViewModel::clearMessage,
@@ -230,7 +223,6 @@ fun AppNavHost(
                             authProvider = loginUiState.user?.authProvider,
                             onBackClick = { navController.popBackStack() },
                             onLogoutClick = {
-                                isGuestMode = false
                                 loginViewModel.logout()
                             },
                         )

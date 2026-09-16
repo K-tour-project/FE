@@ -25,6 +25,10 @@ private val tourismImageCache = object : LruCache<String, Bitmap>(16 * 1024 * 10
     override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
 }
 
+internal fun invalidateTourismBitmap(url: String?) {
+    if (!url.isNullOrBlank()) tourismImageCache.remove(url)
+}
+
 internal suspend fun loadTourismBitmap(url: String?): Bitmap? {
     if (url.isNullOrBlank()) return null
     tourismImageCache.get(url)?.let { return it }

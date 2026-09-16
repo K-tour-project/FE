@@ -105,6 +105,7 @@ fun MyPageRoute(
         profileName = state.myPage.nickname.ifBlank { "사용자" },
         profileEmail = state.myPage.email,
         profileImageUrl = state.myPage.profileImageUrl,
+        profileImageRevision = state.profileImageRevision,
         isLoading = state.isLoading,
         isLoadingMorePlaces = state.isLoadingMorePlaces,
         isLoadingMoreWorks = state.isLoadingMoreProducts,
@@ -168,6 +169,7 @@ fun MyPageScreen(
     profileName: String = "lee neng",
     profileEmail: String = "user@example.com",
     profileImageUrl: String? = null,
+    profileImageRevision: Int = 0,
     isLoading: Boolean = false,
     isLoadingMorePlaces: Boolean = false,
     isLoadingMoreWorks: Boolean = false,
@@ -204,7 +206,7 @@ fun MyPageScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { ProfileCard(profileName, profileEmail, profileImageUrl) }
+            item { ProfileCard(profileName, profileEmail, profileImageUrl, profileImageRevision) }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     SummaryCard(
@@ -377,7 +379,7 @@ private fun PaginationFooter(
 }
 
 @Composable
-private fun ProfileCard(profileName: String, profileEmail: String, profileImageUrl: String?) {
+private fun ProfileCard(profileName: String, profileEmail: String, profileImageUrl: String?, imageRevision: Int) {
     SurfaceCard(height = 130.dp) {
         Row(
             modifier = Modifier.fillMaxSize().padding(18.dp),
@@ -387,7 +389,7 @@ private fun ProfileCard(profileName: String, profileEmail: String, profileImageU
                 modifier = Modifier.size(92.dp).clip(CircleShape).background(Color(0xFFE6F1FF)),
                 contentAlignment = Alignment.Center,
             ) {
-                val profileBitmap by produceState<android.graphics.Bitmap?>(null, profileImageUrl) {
+                val profileBitmap by produceState<android.graphics.Bitmap?>(null, profileImageUrl, imageRevision) {
                     value = loadTourismBitmap(profileImageUrl)
                 }
                 profileBitmap?.let {

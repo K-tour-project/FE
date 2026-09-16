@@ -5,6 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.cachedIn
 import com.everytrip.app.feature.mypage.data.FavoriteRepository
+import com.everytrip.app.feature.mypage.data.UpdatedProfile
+import com.everytrip.app.feature.region.presentation.search.invalidateTourismBitmap
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -138,7 +140,7 @@ class FavoriteViewModel(application: Application) : AndroidViewModel(application
 
     fun updateNickname(nickname: String) = settingsMutation {
         val updated = repository.updateNickname(nickname)
-        _uiState.update { it.copy(myPage = it.myPage.copy(nickname = updated.nickname)) }
+        applyUpdatedProfile(updated)
         "닉네임이 변경되었습니다."
     }
 
@@ -158,18 +160,35 @@ class FavoriteViewModel(application: Application) : AndroidViewModel(application
 
     fun updateProfileImage(bytes: ByteArray, mimeType: String, fileName: String) = settingsMutation {
         val updated = repository.updateProfileImage(bytes, mimeType, fileName)
-        _uiState.update { it.copy(myPage = it.myPage.copy(profileImageUrl = updated.profileImageUrl)) }
+        invalidateTourismBitmap(_uiState.value.myPage.profileImageUrl)
+        invalidateTourismBitmap(updated.profileImageUrl)
+        applyUpdatedProfile(updated, imageChanged = true)
         "프로필 이미지가 변경되었습니다."
     }
 
     fun removeProfileImage() = settingsMutation {
-        repository.removeProfileImage()
-        _uiState.update { it.copy(myPage = it.myPage.copy(profileImageUrl = null)) }
+        val updated = repository.removeProfileImage()
+        invalidateTourismBitmap(_uiState.value.myPage.profileImageUrl)
+        applyUpdatedProfile(updated, imageChanged = true)
         "프로필 이미지가 삭제되었습니다."
     }
 
     fun clearSettingsMessage() = _uiState.update { it.copy(settingsMessage = null) }
     fun showSettingsMessage(message: String) = _uiState.update { it.copy(settingsMessage = message) }
+
+    private fun applyUpdatedProfile(updated: UpdatedProfile, imageChanged: Boolean = false) {
+        _uiState.update { state ->
+            state.copy(
+                myPage = state.myPage.copy(
+                    userId = updated.userId,
+                    nickname = updated.nickname,
+                    email = updated.email,
+                    profileImageUrl = updated.profileImageUrl,
+                ),
+                profileImageRevision = state.profileImageRevision + if (imageChanged) 1 else 0,
+            )
+        }
+    }
 
     private fun settingsMutation(block: suspend () -> String) {
         viewModelScope.launch {
