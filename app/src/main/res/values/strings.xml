@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">project</string>
+    <string name="splash_brand_korean">에브리 트립</string>
+    <string name="splash_tagline_start">콘텐츠</string>
+    <string name="splash_tagline_middle">로 떠나는 모든 </string>
+    <string name="splash_tagline_end">여행</string>
+    <string name="splash_loading">여행을 준비하고 있어요</string>
 </resources>
