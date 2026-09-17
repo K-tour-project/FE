@@ -93,6 +93,18 @@ class AuthSecureStorage(context: Context) {
         }
     }
 
+    fun savePasswordResetToken(token: String) {
+        require(token.isNotBlank())
+        preferences.edit { putEncrypted(KEY_PASSWORD_RESET_TOKEN, token) }
+    }
+
+    fun getPasswordResetToken(): String? = getEncrypted(KEY_PASSWORD_RESET_TOKEN)
+        ?.takeIf(String::isNotBlank)
+
+    fun clearPasswordResetToken() {
+        preferences.edit { remove(KEY_PASSWORD_RESET_TOKEN) }
+    }
+
     private fun clearDeviceIdAndTokens() {
         preferences.edit {
             remove(KEY_DEVICE_ID)
@@ -167,6 +179,7 @@ class AuthSecureStorage(context: Context) {
         const val KEY_DEVICE_ID = "device_id"
         const val KEY_ACCESS_TOKEN = "access_token"
         const val KEY_REFRESH_TOKEN = "refresh_token"
+        const val KEY_PASSWORD_RESET_TOKEN = "password_reset_token"
         const val ANDROID_KEY_STORE = "AndroidKeyStore"
         const val TRANSFORMATION = "AES/GCM/NoPadding"
         const val IV_SIZE = 12

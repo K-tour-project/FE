@@ -6,6 +6,8 @@ import com.everytrip.app.feature.auth.data.model.AuthUser
 import com.everytrip.app.feature.auth.data.model.EmailCodeResponse
 import com.everytrip.app.feature.auth.data.model.EmailVerifyResponse
 import com.everytrip.app.feature.auth.data.model.SignUpResponse
+import com.everytrip.app.feature.auth.data.model.PasswordResetConfirmResponse
+import com.everytrip.app.feature.auth.data.local.AuthSecureStorage
 import com.everytrip.app.feature.auth.data.remote.AuthApi
 import com.everytrip.app.feature.auth.data.remote.AuthSessionManager
 
@@ -14,6 +16,7 @@ class AuthRepositoryImpl(
     private val authApi: AuthApi = AuthApi(),
 ) : AuthRepository {
     private val sessionManager = AuthSessionManager.get(context)
+    private val secureStorage = AuthSecureStorage(context)
 
     override fun getOrCreateDeviceId(): String = sessionManager.getOrCreateDeviceId()
 
@@ -25,6 +28,36 @@ class AuthRepositoryImpl(
 
     override suspend fun verifyEmailCode(email: String, code: String): EmailVerifyResponse =
         authApi.verifyEmailCode(email, code)
+
+    override suspend fun sendPasswordResetCode(email: String) {
+        secureStorage.clearPasswordResetToken()
+        authApi.sendPasswordResetCode(email)
+    }
+
+    override suspend fun verifyPasswordResetCode(email: String, code: String) {
+        secureStorage.clearPasswordResetToken()
+        val token = authApi.verifyPasswordResetCode(email, code).resetToken
+        require(token.isNotBlank()) { "인증 응답에 재설정 토큰이 없습니다." }
+        secureStorage.savePasswordResetToken(token)
+    }
+
+    override suspend fun confirmPasswordReset(password: String): PasswordResetConfirmResponse {
+        val token = secureStorage.getPasswordResetToken()
+            ?: throw IllegalStateException("이메일 인증을 다시 진행해 주세요.")
+        return try {
+            authApi.confirmPasswordReset(token, password).also {
+                secureStorage.clearPasswordResetToken()
+                sessionManager.clearTokens()
+            }
+        } catch (error: Exception) {
+            if (error is com.everytrip.app.feature.auth.data.remote.AuthHttpException && error.statusCode == 400) {
+                secureStorage.clearPasswordResetToken()
+            }
+            throw error
+        }
+    }
+
+    override fun clearPasswordResetToken() = secureStorage.clearPasswordResetToken()
 
     override suspend fun signUp(
         email: String,

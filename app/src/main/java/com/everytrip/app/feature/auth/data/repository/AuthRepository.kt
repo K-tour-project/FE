@@ -5,6 +5,7 @@ import com.everytrip.app.feature.auth.data.model.AuthUser
 import com.everytrip.app.feature.auth.data.model.EmailCodeResponse
 import com.everytrip.app.feature.auth.data.model.EmailVerifyResponse
 import com.everytrip.app.feature.auth.data.model.SignUpResponse
+import com.everytrip.app.feature.auth.data.model.PasswordResetConfirmResponse
 
 interface AuthRepository {
     fun getOrCreateDeviceId(): String
@@ -12,6 +13,10 @@ interface AuthRepository {
     fun getStoredRefreshToken(): String?
     suspend fun sendEmailCode(email: String): EmailCodeResponse
     suspend fun verifyEmailCode(email: String, code: String): EmailVerifyResponse
+    suspend fun sendPasswordResetCode(email: String)
+    suspend fun verifyPasswordResetCode(email: String, code: String)
+    suspend fun confirmPasswordReset(password: String): PasswordResetConfirmResponse
+    fun clearPasswordResetToken()
     suspend fun signUp(
         email: String,
         password: String,

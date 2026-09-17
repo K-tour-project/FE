@@ -11,6 +11,11 @@ import com.everytrip.app.feature.auth.data.model.GoogleLoginRequest
 import com.everytrip.app.feature.auth.data.model.KakaoLoginRequest
 import com.everytrip.app.feature.auth.data.model.LoginRequest
 import com.everytrip.app.feature.auth.data.model.LogoutRequest
+import com.everytrip.app.feature.auth.data.model.PasswordResetCodeRequest
+import com.everytrip.app.feature.auth.data.model.PasswordResetVerifyRequest
+import com.everytrip.app.feature.auth.data.model.PasswordResetVerifyResponse
+import com.everytrip.app.feature.auth.data.model.PasswordResetConfirmRequest
+import com.everytrip.app.feature.auth.data.model.PasswordResetConfirmResponse
 import com.everytrip.app.feature.auth.data.model.RefreshRequest
 import com.everytrip.app.feature.auth.data.model.SignUpRequest
 import com.everytrip.app.feature.auth.data.model.SignUpResponse
@@ -20,6 +25,15 @@ import retrofit2.http.POST
 import retrofit2.http.Tag
 
 internal interface AuthService {
+    @POST("auth/password-reset/send-code")
+    suspend fun sendPasswordResetCode(@Body request: PasswordResetCodeRequest)
+
+    @POST("auth/password-reset/verify-code")
+    suspend fun verifyPasswordResetCode(@Body request: PasswordResetVerifyRequest): PasswordResetVerifyResponse
+
+    @POST("auth/password-reset/confirm")
+    suspend fun confirmPasswordReset(@Body request: PasswordResetConfirmRequest): PasswordResetConfirmResponse
+
     @POST("auth/email/send-code")
     suspend fun sendEmailCode(@Body request: EmailCodeRequest): EmailCodeResponse
 

@@ -12,6 +12,11 @@ import com.everytrip.app.feature.auth.data.model.GoogleLoginRequest
 import com.everytrip.app.feature.auth.data.model.KakaoLoginRequest
 import com.everytrip.app.feature.auth.data.model.LoginRequest
 import com.everytrip.app.feature.auth.data.model.LogoutRequest
+import com.everytrip.app.feature.auth.data.model.PasswordResetCodeRequest
+import com.everytrip.app.feature.auth.data.model.PasswordResetVerifyRequest
+import com.everytrip.app.feature.auth.data.model.PasswordResetVerifyResponse
+import com.everytrip.app.feature.auth.data.model.PasswordResetConfirmRequest
+import com.everytrip.app.feature.auth.data.model.PasswordResetConfirmResponse
 import com.everytrip.app.feature.auth.data.model.RefreshRequest
 import com.everytrip.app.feature.auth.data.model.SignUpRequest
 import com.everytrip.app.feature.auth.data.model.SignUpResponse
@@ -22,6 +27,18 @@ class AuthApi private constructor(
     private val service: AuthService,
 ) {
     constructor() : this(NetworkProvider.create(AuthService::class.java))
+
+    suspend fun sendPasswordResetCode(email: String) = execute {
+        service.sendPasswordResetCode(PasswordResetCodeRequest(email))
+    }
+
+    suspend fun verifyPasswordResetCode(email: String, code: String): PasswordResetVerifyResponse = execute {
+        service.verifyPasswordResetCode(PasswordResetVerifyRequest(email, code))
+    }
+
+    suspend fun confirmPasswordReset(token: String, password: String): PasswordResetConfirmResponse = execute {
+        service.confirmPasswordReset(PasswordResetConfirmRequest(token, password))
+    }
 
     suspend fun sendEmailCode(email: String): EmailCodeResponse = execute {
         service.sendEmailCode(EmailCodeRequest(email))

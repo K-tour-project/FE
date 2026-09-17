@@ -134,6 +134,12 @@ fun AppNavHost(
                             onKakaoLoginClick = onKakaoLoginClick,
                             onGoogleLoginClick = onGoogleLoginClick,
                             onMessageShown = loginViewModel::clearMessage,
+                            resetState = loginViewModel.resetState.collectAsState().value,
+                            onResetEmailChanged = loginViewModel::resetEmailChanged,
+                            onSendResetCode = loginViewModel::sendPasswordResetCode,
+                            onVerifyResetCode = loginViewModel::verifyPasswordResetCode,
+                            onConfirmReset = loginViewModel::confirmPasswordReset,
+                            onDismissReset = loginViewModel::dismissPasswordReset,
                         )
                     }
                     composable(AppRoute.SignUp.route) {

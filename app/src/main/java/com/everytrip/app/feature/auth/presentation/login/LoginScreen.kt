@@ -16,23 +16,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -53,8 +45,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.everytrip.app.R
 import com.everytrip.app.core.designsystem.component.AppTextField
 import com.everytrip.app.core.designsystem.component.AppTopBar
@@ -79,6 +69,12 @@ fun LoginScreen(
     onKakaoLoginClick: () -> Unit = {},
     onGoogleLoginClick: () -> Unit = {},
     onMessageShown: () -> Unit = {},
+    resetState: PasswordResetUiState = PasswordResetUiState(),
+    onResetEmailChanged: (String) -> Unit = {},
+    onSendResetCode: (String) -> Unit = {},
+    onVerifyResetCode: (String, String) -> Unit = { _, _ -> },
+    onConfirmReset: (String, String) -> Unit = { _, _ -> },
+    onDismissReset: () -> Unit = {},
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -196,127 +192,24 @@ fun LoginScreen(
     }
 
     if (showPasswordResetDialog) {
-        PasswordResetDialog(onDismiss = { showPasswordResetDialog = false })
-    }
-}
-
-@Composable
-private fun PasswordResetDialog(onDismiss: () -> Unit) {
-    var email by remember { mutableStateOf("") }
-    var code by remember { mutableStateOf("") }
-    var newPassword by remember { mutableStateOf("") }
-    var passwordCheck by remember { mutableStateOf("") }
-    var notice by remember { mutableStateOf<String?>(null) }
-    val comingSoon = "이메일 인증과 비밀번호 변경은 준비 중이에요."
-
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Card(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).widthIn(max = 420.dp),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 24.dp),
-            ) {
-                Text("비밀번호 찾기", color = NavyText, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(8.dp))
-                Text("가입한 이메일을 인증하고 새 비밀번호를 입력해 주세요.", color = SecondaryText, fontSize = 14.sp)
-                Spacer(Modifier.height(22.dp))
-
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    AppTextField(
-                        value = email,
-                        onValueChange = { email = it; code = ""; notice = null },
-                        placeholder = "이메일 주소를 입력해 주세요",
-                        leadingIcon = Icons.Outlined.Email,
-                        contentDescription = "이메일",
-                        modifier = Modifier.weight(1f),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    ResetCodeButton("코드 전송", enabled = email.isNotBlank(), filled = false) {
-                        notice = comingSoon
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    AppTextField(
-                        value = code,
-                        onValueChange = { code = it.filter(Char::isDigit).take(6); notice = null },
-                        placeholder = "인증코드 6자리",
-                        leadingIcon = Icons.Outlined.VerifiedUser,
-                        contentDescription = "인증코드",
-                        modifier = Modifier.weight(1f),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    ResetCodeButton("인증 확인", enabled = code.length == 6, filled = true) {
-                        notice = comingSoon
-                    }
-                }
-                Spacer(Modifier.height(16.dp))
-                PasswordTextField(
-                    value = newPassword,
-                    onValueChange = { newPassword = it; notice = null },
-                    placeholder = "새 비밀번호",
-                    contentDescription = "새 비밀번호",
-                )
-                Text(
-                    "8자 이상, 영문과 숫자 포함, 최대 72바이트",
-                    modifier = Modifier.padding(start = 12.dp, top = 4.dp),
-                    color = SecondaryText,
-                    fontSize = 12.sp,
-                )
-                Spacer(Modifier.height(10.dp))
-                PasswordTextField(
-                    value = passwordCheck,
-                    onValueChange = { passwordCheck = it; notice = null },
-                    placeholder = "새 비밀번호 확인",
-                    contentDescription = "새 비밀번호 확인",
-                )
-                if (notice != null) {
-                    Text(notice!!, modifier = Modifier.padding(top = 12.dp), color = PrimaryBlue, fontSize = 13.sp)
-                }
-                Spacer(Modifier.height(24.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f).height(52.dp),
-                        shape = RoundedCornerShape(13.dp),
-                        border = BorderStroke(1.dp, PrimaryBlue),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryBlue),
-                    ) { Text("취소", fontWeight = FontWeight.Bold) }
-                    Button(
-                        onClick = { notice = comingSoon },
-                        enabled = email.isNotBlank() && code.length == 6 &&
-                            newPassword.isNotBlank() && newPassword == passwordCheck,
-                        modifier = Modifier.weight(1f).height(52.dp),
-                        shape = RoundedCornerShape(13.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                    ) { Text("확인", fontWeight = FontWeight.Bold) }
-                }
+        PasswordResetDialog(
+            state = resetState,
+            onEmailChanged = onResetEmailChanged,
+            onSendCode = onSendResetCode,
+            onVerifyCode = onVerifyResetCode,
+            onConfirm = onConfirmReset,
+            onDismiss = {
+                onDismissReset()
+                showPasswordResetDialog = false
+            },
+        )
+        LaunchedEffect(resetState.completed) {
+            if (resetState.completed) {
+                showPasswordResetDialog = false
+                onDismissReset()
             }
         }
     }
-}
-
-@Composable
-private fun ResetCodeButton(text: String, enabled: Boolean, filled: Boolean, onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = Modifier.width(88.dp).height(52.dp),
-        shape = RoundedCornerShape(13.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (filled) Color(0xFFDDEAFF) else Color.White,
-            contentColor = PrimaryBlue,
-            disabledContainerColor = if (filled) Color(0xFFE8EEF7) else Color.White,
-            disabledContentColor = SecondaryText,
-        ),
-        border = if (filled) null else BorderStroke(1.dp, if (enabled) PrimaryBlue else SecondaryText.copy(alpha = 0.45f)),
-        contentPadding = PaddingValues(horizontal = 4.dp),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
-    ) { Text(text, fontSize = 12.sp, fontWeight = FontWeight.Bold) }
 }
 
 @Composable
