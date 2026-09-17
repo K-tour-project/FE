@@ -162,6 +162,7 @@ class FavoriteRepository(context: Context) {
 
     private fun JsonObject.toFavoritePlace(): FavoritePlaceData? {
         val value = obj("place") ?: obj("tourism") ?: obj("favorite_place") ?: this
+        val region = value.obj("region")
         return FavoritePlaceData(
             favoriteId = longOrNull("favorite_id") ?: return null,
             placeId = intOrNull("place_id") ?: value.intOrNull("place_id") ?: value.intOrNull("id"),
@@ -171,6 +172,12 @@ class FavoriteRepository(context: Context) {
             address = value.string("address", "road_address", "addr1"),
             imageUrl = value.stringOrNull("thumbnail_url", "image_url", "poster_url", "first_image"),
             detailPath = value.string("detail_path"),
+            sidoName = value.stringOrNull("sido_name", "sidoName")
+                ?: region?.stringOrNull("sido_name", "sidoName")
+                ?: string("sido_name", "sidoName"),
+            sigunguName = value.stringOrNull("sigungu_name", "sigunguName")
+                ?: region?.stringOrNull("sigungu_name", "sigunguName")
+                ?: string("sigungu_name", "sigunguName"),
         )
     }
 

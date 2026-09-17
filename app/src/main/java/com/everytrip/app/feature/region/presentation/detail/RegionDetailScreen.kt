@@ -25,7 +25,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.AccessTime
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.LocalParking
 import androidx.compose.material.icons.outlined.LocationOn
@@ -72,6 +74,7 @@ import com.everytrip.app.feature.region.presentation.search.TourismImage
 import com.everytrip.app.feature.artwork.presentation.detail.ArtworkDetailScreen
 import com.everytrip.app.ui.theme.BodyText
 import com.everytrip.app.ui.theme.Border
+import com.everytrip.app.ui.theme.FavoritePink
 import com.everytrip.app.ui.theme.NavyText
 import com.everytrip.app.ui.theme.PrimaryBlue
 import com.everytrip.app.ui.theme.SecondaryText
@@ -157,7 +160,17 @@ private fun FilmingPlaceContent(
 ) {
     val tour = place.detail
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        DetailTopBar(place.name, onClose, isActionSelected = isFavorite, onActionClick = onFavoriteClick)
+        DetailTopBar(
+            title = place.name,
+            onBackClick = onClose,
+            actionIcon = Icons.Outlined.FavoriteBorder,
+            selectedActionIcon = Icons.Filled.Favorite,
+            selectedActionColor = FavoritePink,
+            actionContentDescription = "찜하기",
+            selectedActionContentDescription = "찜 취소",
+            isActionSelected = isFavorite,
+            onActionClick = onFavoriteClick,
+        )
         ImageCarousel(tour?.images.orEmpty(), tour?.imageCount ?: 0, place.name)
         Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -186,7 +199,17 @@ private fun TourismPlaceContent(
     onFavoriteClick: () -> Unit = {},
 ) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        DetailTopBar(detail.name, onClose, isActionSelected = isFavorite, onActionClick = onFavoriteClick)
+        DetailTopBar(
+            title = detail.name,
+            onBackClick = onClose,
+            actionIcon = Icons.Outlined.FavoriteBorder,
+            selectedActionIcon = Icons.Filled.Favorite,
+            selectedActionColor = FavoritePink,
+            actionContentDescription = "찜하기",
+            selectedActionContentDescription = "찜 취소",
+            isActionSelected = isFavorite,
+            onActionClick = onFavoriteClick,
+        )
         ImageCarousel(detail.images, detail.imageCount, detail.name)
         Column(Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)) {

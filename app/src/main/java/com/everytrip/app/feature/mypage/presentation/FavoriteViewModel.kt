@@ -130,6 +130,34 @@ class FavoriteViewModel(application: Application) : AndroidViewModel(application
         refresh()
     }
 
+    fun setPlaceFavorite(id: Int, saved: Boolean, onComplete: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            runCatching { repository.setPlace(id, saved) }
+                .onSuccess { mutation ->
+                    _uiState.update { state ->
+                        state.copy(favoritePlaceIds = if (mutation.isSaved) state.favoritePlaceIds + id else state.favoritePlaceIds - id)
+                    }
+                    refresh()
+                    onComplete(true)
+                }
+                .onFailure { onComplete(false) }
+        }
+    }
+
+    fun setTourismFavorite(id: String, saved: Boolean, onComplete: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            runCatching { repository.setTourism(id, saved) }
+                .onSuccess { mutation ->
+                    _uiState.update { state ->
+                        state.copy(favoriteTourismIds = if (mutation.isSaved) state.favoriteTourismIds + id else state.favoriteTourismIds - id)
+                    }
+                    refresh()
+                    onComplete(true)
+                }
+                .onFailure { onComplete(false) }
+        }
+    }
+
     fun toggleProduct(id: Int) = mutate {
         val save = id !in _uiState.value.savedProductIds
         repository.setProduct(id, save)

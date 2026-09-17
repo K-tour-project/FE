@@ -11,6 +11,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -38,10 +41,12 @@ import com.everytrip.app.feature.chatbot.presentation.ChatViewModel
 import com.everytrip.app.feature.home.presentation.HomeScreen
 import com.everytrip.app.feature.home.presentation.HomeViewModel
 import com.everytrip.app.feature.mypage.presentation.FavoriteViewModel
+import com.everytrip.app.feature.mypage.data.FavoritePlaceData
 import com.everytrip.app.feature.mypage.presentation.MyPageRoute
 import com.everytrip.app.feature.mypage.presentation.SettingsRoute
 import com.everytrip.app.feature.region.presentation.search.RegionSearchScreen
 import com.everytrip.app.feature.region.presentation.search.RegionSearchViewModel
+import com.everytrip.app.feature.region.presentation.detail.RegionDetailScreen
 import com.everytrip.app.feature.splash.presentation.SplashScreen
 import com.everytrip.app.ui.theme.PrimaryBlue
 
@@ -165,6 +170,7 @@ fun AppNavHost(
                     composable(AppRoute.Home.route) {
                         val homeViewModel: HomeViewModel = viewModel()
                         val homeUiState by homeViewModel.uiState.collectAsState()
+                        var showPopularPlaceDetail by remember { mutableStateOf(false) }
                         HomeScreen(
                             uiState = homeUiState,
                             onNavigateToSearch = { navController.navigateBottom(AppRoute.ArtworkSearch) },
@@ -173,7 +179,7 @@ fun AppNavHost(
                                 val contentId = detailPath.substringAfterLast('/').takeIf(String::isNotBlank)
                                 if (detailPath.startsWith("/tourism-places/") && contentId != null) {
                                     regionSearchViewModel.selectRelatedPlace(contentId)
-                                    navController.navigateBottom(AppRoute.RegionSearch)
+                                    showPopularPlaceDetail = true
                                 }
                             },
                             onNavigateToWork = { detailPath ->
@@ -183,6 +189,31 @@ fun AppNavHost(
                             },
                             onRetry = homeViewModel::loadHome,
                         )
+                        if (showPopularPlaceDetail) {
+                            RegionDetailScreen(
+                                state = regionUiState,
+                                onClose = {
+                                    showPopularPlaceDetail = false
+                                    regionSearchViewModel.closePlaceDetail()
+                                },
+                                onRetry = {
+                                    regionUiState.selectedContentId?.let(regionSearchViewModel::selectRelatedPlace)
+                                },
+                                onContentClick = { productId ->
+                                    showPopularPlaceDetail = false
+                                    regionSearchViewModel.closePlaceDetail()
+                                    navController.navigate(AppRoute.ArtworkDetail.createRoute(productId))
+                                },
+                                onFilmingPlaceClick = regionSearchViewModel::selectFilmingPlace,
+                                onRelatedPlaceClick = regionSearchViewModel::selectRelatedPlace,
+                                favoritePlaceIds = favoriteUiState.favoritePlaceIds,
+                                favoriteTourismIds = favoriteUiState.favoriteTourismIds,
+                                savedProductIds = favoriteUiState.savedProductIds,
+                                onTogglePlace = favoriteViewModel::togglePlace,
+                                onToggleTourism = favoriteViewModel::toggleTourism,
+                                onToggleProduct = favoriteViewModel::toggleProduct,
+                            )
+                        }
                     }
                     composable(AppRoute.Chatbot.route) { AiChatbotScreen(chatViewModel) }
                     composable(AppRoute.ArtworkSearch.route) {
@@ -213,18 +244,27 @@ fun AppNavHost(
                         )
                     }
                     composable(AppRoute.MyPage.route) {
+                        var selectedMyPageFavorite by remember { mutableStateOf<FavoritePlaceData?>(null) }
+                        var isSelectedMyPageFavorite by remember { mutableStateOf(true) }
+                        var favoriteUpdatePending by remember { mutableStateOf(false) }
                         MyPageRoute(
                             viewModel = favoriteViewModel,
                             onSettingsClick = { navController.navigate(AppRoute.Settings.route) },
-                            onPlaceClick = { detailPath ->
+                            onPlaceClick = { favorite ->
+                                val detailPath = favorite.detailPath
                                 val id = detailPath.substringAfterLast('/').takeIf(String::isNotBlank)
                                 when {
-                                    detailPath.startsWith("/places/") -> id?.toIntOrNull()
-                                        ?.let(regionSearchViewModel::selectFilmingPlace)
-                                    detailPath.startsWith("/tourism-places/") -> id
-                                        ?.let(regionSearchViewModel::selectRelatedPlace)
+                                    detailPath.startsWith("/places/") && id?.toIntOrNull() != null -> {
+                                        regionSearchViewModel.selectFilmingPlace(id.toInt())
+                                        selectedMyPageFavorite = favorite
+                                        isSelectedMyPageFavorite = true
+                                    }
+                                    detailPath.startsWith("/tourism-places/") && id != null -> {
+                                        regionSearchViewModel.selectRelatedPlace(id)
+                                        selectedMyPageFavorite = favorite
+                                        isSelectedMyPageFavorite = true
+                                    }
                                 }
-                                navController.navigateBottom(AppRoute.RegionSearch)
                             },
                             onWorkClick = { detailPath ->
                                 detailPath.substringAfterLast('/').toIntOrNull()?.let { productId ->
@@ -232,6 +272,68 @@ fun AppNavHost(
                                 }
                             },
                         )
+                        selectedMyPageFavorite?.let { selected ->
+                            val selectedPlaceId = selected.placeId
+                                ?: selected.detailPath.takeIf { it.startsWith("/places/") }
+                                    ?.substringAfterLast('/')?.toIntOrNull()
+                            val selectedTourismId = selected.contentId
+                                ?: selected.detailPath.takeIf { it.startsWith("/tourism-places/") }
+                                    ?.substringAfterLast('/')
+                            RegionDetailScreen(
+                                state = regionUiState,
+                                onClose = {
+                                    selectedMyPageFavorite = null
+                                    regionSearchViewModel.closePlaceDetail()
+                                },
+                                onRetry = {
+                                    regionUiState.selectedPlaceId?.let(regionSearchViewModel::selectFilmingPlace)
+                                        ?: regionUiState.selectedContentId?.let(regionSearchViewModel::selectRelatedPlace)
+                                },
+                                onContentClick = { productId ->
+                                    selectedMyPageFavorite = null
+                                    regionSearchViewModel.closePlaceDetail()
+                                    navController.navigate(AppRoute.ArtworkDetail.createRoute(productId))
+                                },
+                                onFilmingPlaceClick = regionSearchViewModel::selectFilmingPlace,
+                                onRelatedPlaceClick = regionSearchViewModel::selectRelatedPlace,
+                                favoritePlaceIds = selectedPlaceId?.let { placeId ->
+                                    if (isSelectedMyPageFavorite) favoriteUiState.favoritePlaceIds + placeId
+                                    else favoriteUiState.favoritePlaceIds - placeId
+                                } ?: favoriteUiState.favoritePlaceIds,
+                                favoriteTourismIds = selectedTourismId?.let { contentId ->
+                                    if (isSelectedMyPageFavorite) favoriteUiState.favoriteTourismIds + contentId
+                                    else favoriteUiState.favoriteTourismIds - contentId
+                                } ?: favoriteUiState.favoriteTourismIds,
+                                savedProductIds = favoriteUiState.savedProductIds,
+                                onTogglePlace = { placeId ->
+                                    if (placeId == selectedPlaceId) {
+                                        if (!favoriteUpdatePending) {
+                                            val previous = isSelectedMyPageFavorite
+                                            isSelectedMyPageFavorite = !previous
+                                            favoriteUpdatePending = true
+                                            favoriteViewModel.setPlaceFavorite(placeId, !previous) { success ->
+                                                if (!success) isSelectedMyPageFavorite = previous
+                                                favoriteUpdatePending = false
+                                            }
+                                        }
+                                    } else favoriteViewModel.togglePlace(placeId)
+                                },
+                                onToggleTourism = { contentId ->
+                                    if (contentId == selectedTourismId) {
+                                        if (!favoriteUpdatePending) {
+                                            val previous = isSelectedMyPageFavorite
+                                            isSelectedMyPageFavorite = !previous
+                                            favoriteUpdatePending = true
+                                            favoriteViewModel.setTourismFavorite(contentId, !previous) { success ->
+                                                if (!success) isSelectedMyPageFavorite = previous
+                                                favoriteUpdatePending = false
+                                            }
+                                        }
+                                    } else favoriteViewModel.toggleTourism(contentId)
+                                },
+                                onToggleProduct = favoriteViewModel::toggleProduct,
+                            )
+                        }
                     }
                     composable(AppRoute.Settings.route) {
                         SettingsRoute(
