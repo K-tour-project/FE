@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -363,13 +364,15 @@ private fun ContentCarousel(contents: List<ContentSummary>, onClick: (Int) -> Un
 private fun RelatedPlaceCarousel(places: List<RelatedPlace>, onClick: (String) -> Unit) {
     if (places.isEmpty()) return
     SectionTitle("연관 관광지 추천")
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(vertical = 6.dp),
+    ) {
         items(places, key = { it.relatedId }) { place ->
             Card(
                 Modifier.width(192.dp).height(98.dp).clickable { onClick(place.contentId) },
                 shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(Color.White),
-                border = androidx.compose.foundation.BorderStroke(1.dp, PrimaryBlue),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
             ) {
                 Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.Center) {
                     Text(place.name, color = NavyText, style = MaterialTheme.typography.titleMedium,

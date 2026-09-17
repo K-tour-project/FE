@@ -1,28 +1,23 @@
 package com.everytrip.app.feature.auth.presentation.legal
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import com.everytrip.app.core.designsystem.component.AppTopBar
+import androidx.compose.ui.tooling.preview.Preview
+import com.everytrip.app.ui.theme.ProjectTheme
 
 @Composable
-fun TermsOfServiceScreen(
-    onBackClick: () -> Unit = {}
-) {
-    Scaffold(
-        topBar = {
-            AppTopBar(title1 = "이용 약관", title2 = "" ,onBackClick = onBackClick)
-        },
-        containerColor = Color.White
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        )
-    }
+fun TermsOfServiceScreen(onBackClick: () -> Unit = {}) {
+    LegalDocumentScreen(
+        title = "이용약관",
+        kicker = "EVERY TRIP  ·  TERMS",
+        headline = "Every Trip 이용 안내",
+        introduction = "팀 ISFP가 제공하는 Every Trip 서비스의 이용조건과 운영팀·이용자의 권리 및 의무를 안내합니다.",
+        sections = termsSections,
+        onBackClick = onBackClick,
+    )
+}
+
+@Preview(showBackground = true, widthDp = 393, heightDp = 852)
+@Composable
+private fun TermsOfServicePreview() {
+    ProjectTheme { TermsOfServiceScreen() }
 }

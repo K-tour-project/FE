@@ -3,6 +3,8 @@ package com.everytrip.app.core.navigation
 sealed class AppRoute(val route: String) {
     data object Login : AppRoute("login")
     data object SignUp : AppRoute("signup")
+    data object PrivacyPolicy : AppRoute("privacy-policy")
+    data object TermsOfService : AppRoute("terms-of-service")
     data object Home : AppRoute("home")
     data object Chatbot : AppRoute("chatbot")
     data object ArtworkSearch : AppRoute("artwork-search")

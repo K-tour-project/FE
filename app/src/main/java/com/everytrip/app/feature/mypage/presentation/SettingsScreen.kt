@@ -82,6 +82,8 @@ fun SettingsRoute(
     viewModel: FavoriteViewModel,
     authProvider: String?,
     onBackClick: () -> Unit,
+    onPrivacyClick: () -> Unit,
+    onTermsClick: () -> Unit,
     onLogoutClick: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -107,6 +109,8 @@ fun SettingsRoute(
         isLoading = state.isSettingsLoading,
         message = state.settingsMessage,
         onBackClick = onBackClick,
+        onPrivacyClick = onPrivacyClick,
+        onTermsClick = onTermsClick,
         onProfileEditClick = { imageLauncher.launch("image/*") },
         onRemoveProfileImage = viewModel::removeProfileImage,
         onNicknameChange = viewModel::updateNickname,
@@ -128,6 +132,8 @@ fun SettingsScreen(
     isLoading: Boolean = false,
     message: String? = null,
     onBackClick: () -> Unit = {},
+    onPrivacyClick: () -> Unit = {},
+    onTermsClick: () -> Unit = {},
     onProfileEditClick: () -> Unit = {},
     onRemoveProfileImage: () -> Unit = {},
     onNicknameChange: (String) -> Unit = {},
@@ -179,8 +185,8 @@ fun SettingsScreen(
             }
             item {
                 SettingsSection("기타", listOf(
-                    SettingItem(Icons.Outlined.Description, "이용약관"),
-                    SettingItem(Icons.Outlined.PrivacyTip, "개인정보 처리방침"),
+                    SettingItem(Icons.Outlined.Description, "이용약관", onClick = onTermsClick),
+                    SettingItem(Icons.Outlined.PrivacyTip, "개인정보 처리방침", onClick = onPrivacyClick),
                 ))
             }
             item { LogoutButton(onLogoutClick) }

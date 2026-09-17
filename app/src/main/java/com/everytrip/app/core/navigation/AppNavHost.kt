@@ -31,6 +31,8 @@ import com.everytrip.app.feature.auth.presentation.login.LoginViewModel
 import com.everytrip.app.feature.auth.presentation.login.SessionCheckState
 import com.everytrip.app.feature.auth.presentation.signup.SignUpScreen
 import com.everytrip.app.feature.auth.presentation.signup.SignUpViewModel
+import com.everytrip.app.feature.auth.presentation.legal.PrivacyPolicyScreen
+import com.everytrip.app.feature.auth.presentation.legal.TermsOfServiceScreen
 import com.everytrip.app.feature.chatbot.presentation.AiChatbotScreen
 import com.everytrip.app.feature.chatbot.presentation.ChatViewModel
 import com.everytrip.app.feature.home.presentation.HomeScreen
@@ -149,8 +151,16 @@ fun AppNavHost(
                             onSendCodeClick = signUpViewModel::sendCode,
                             onVerifyCodeClick = signUpViewModel::verifyCode,
                             onSignUpClick = signUpViewModel::signUp,
+                            onPrivacyClick = { navController.navigate(AppRoute.PrivacyPolicy.route) },
+                            onTermsClick = { navController.navigate(AppRoute.TermsOfService.route) },
                             onMessageShown = signUpViewModel::clearMessage,
                         )
+                    }
+                    composable(AppRoute.PrivacyPolicy.route) {
+                        PrivacyPolicyScreen(onBackClick = { navController.popBackStack() })
+                    }
+                    composable(AppRoute.TermsOfService.route) {
+                        TermsOfServiceScreen(onBackClick = { navController.popBackStack() })
                     }
                     composable(AppRoute.Home.route) {
                         val homeViewModel: HomeViewModel = viewModel()
@@ -228,6 +238,8 @@ fun AppNavHost(
                             viewModel = favoriteViewModel,
                             authProvider = loginUiState.user?.authProvider,
                             onBackClick = { navController.popBackStack() },
+                            onPrivacyClick = { navController.navigate(AppRoute.PrivacyPolicy.route) },
+                            onTermsClick = { navController.navigate(AppRoute.TermsOfService.route) },
                             onLogoutClick = {
                                 loginViewModel.logout()
                             },
