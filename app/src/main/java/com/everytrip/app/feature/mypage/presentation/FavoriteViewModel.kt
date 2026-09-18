@@ -22,6 +22,10 @@ class FavoriteViewModel(application: Application) : AndroidViewModel(application
     private val _uiState = MutableStateFlow(MyPageUiState())
     val uiState = _uiState.asStateFlow()
     private val pagingGeneration = MutableStateFlow(0)
+    private val placeFavoriteOverrides = mutableMapOf<Int, Boolean>()
+    private val tourismFavoriteOverrides = mutableMapOf<String, Boolean>()
+    private val pendingPlaceIds = mutableSetOf<Int>()
+    private val pendingTourismIds = mutableSetOf<String>()
     val favoritePlaces = pagingGeneration
         .flatMapLatest { repository.favoritePlacesPaged() }
         .cachedIn(viewModelScope)
@@ -39,8 +43,8 @@ class FavoriteViewModel(application: Application) : AndroidViewModel(application
                     _uiState.value = MyPageUiState(
                         myPage = myPage,
                         savedProducts = products,
-                        favoritePlaceIds = myPage.favoritePlaces.mapNotNull { it.placeId }.toSet(),
-                        favoriteTourismIds = myPage.favoritePlaces.mapNotNull { it.contentId }.toSet(),
+                        favoritePlaceIds = withPlaceOverrides(myPage.favoritePlaces.mapNotNull { it.placeId }.toSet()),
+                        favoriteTourismIds = withTourismOverrides(myPage.favoritePlaces.mapNotNull { it.contentId }.toSet()),
                         savedProductIds = products.map { it.productId }.toSet(),
                     )
                 }.onFailure { _uiState.update { it.copy(isLoading = false) } }
@@ -64,8 +68,8 @@ class FavoriteViewModel(application: Application) : AndroidViewModel(application
                             .distinctBy { it.favoriteId }
                         current.copy(
                             myPage = current.myPage.copy(favoritePlaces = merged),
-                            favoritePlaceIds = merged.mapNotNull { it.placeId }.toSet(),
-                            favoriteTourismIds = merged.mapNotNull { it.contentId }.toSet(),
+                            favoritePlaceIds = withPlaceOverrides(merged.mapNotNull { it.placeId }.toSet()),
+                            favoriteTourismIds = withTourismOverrides(merged.mapNotNull { it.contentId }.toSet()),
                             isLoadingMorePlaces = false,
                             loadMorePlacesFailed = false,
                         )
@@ -118,22 +122,67 @@ class FavoriteViewModel(application: Application) : AndroidViewModel(application
         loadMoreProducts()
     }
 
-    fun togglePlace(id: Int) = mutate {
+    fun togglePlace(id: Int) {
+        if (!pendingPlaceIds.add(id)) return
         val save = id !in _uiState.value.favoritePlaceIds
-        repository.setPlace(id, save)
-        refresh()
+        val previousOverride = placeFavoriteOverrides.put(id, save)
+        _uiState.update { state ->
+            state.copy(favoritePlaceIds = if (save) state.favoritePlaceIds + id else state.favoritePlaceIds - id)
+        }
+        viewModelScope.launch {
+            try {
+                repository.setPlace(id, save)
+                refresh()
+            } catch (_: Exception) {
+                if (previousOverride == null) placeFavoriteOverrides.remove(id)
+                else placeFavoriteOverrides[id] = previousOverride
+                _uiState.update { state ->
+                    state.copy(favoritePlaceIds = if (save) state.favoritePlaceIds - id else state.favoritePlaceIds + id)
+                }
+            } finally {
+                pendingPlaceIds.remove(id)
+            }
+        }
     }
 
-    fun toggleTourism(id: String) = mutate {
+    fun toggleTourism(id: String) {
+        if (!pendingTourismIds.add(id)) return
         val save = id !in _uiState.value.favoriteTourismIds
-        repository.setTourism(id, save)
-        refresh()
+        val previousOverride = tourismFavoriteOverrides.put(id, save)
+        _uiState.update { state ->
+            state.copy(favoriteTourismIds = if (save) state.favoriteTourismIds + id else state.favoriteTourismIds - id)
+        }
+        viewModelScope.launch {
+            try {
+                repository.setTourism(id, save)
+                refresh()
+            } catch (_: Exception) {
+                if (previousOverride == null) tourismFavoriteOverrides.remove(id)
+                else tourismFavoriteOverrides[id] = previousOverride
+                _uiState.update { state ->
+                    state.copy(favoriteTourismIds = if (save) state.favoriteTourismIds - id else state.favoriteTourismIds + id)
+                }
+            } finally {
+                pendingTourismIds.remove(id)
+            }
+        }
     }
+
+    private fun withPlaceOverrides(ids: Set<Int>): Set<Int> =
+        placeFavoriteOverrides.entries.fold(ids) { current, (id, saved) ->
+            if (saved) current + id else current - id
+        }
+
+    private fun withTourismOverrides(ids: Set<String>): Set<String> =
+        tourismFavoriteOverrides.entries.fold(ids) { current, (id, saved) ->
+            if (saved) current + id else current - id
+        }
 
     fun setPlaceFavorite(id: Int, saved: Boolean, onComplete: (Boolean) -> Unit) {
         viewModelScope.launch {
             runCatching { repository.setPlace(id, saved) }
                 .onSuccess { mutation ->
+                    placeFavoriteOverrides[id] = mutation.isSaved
                     _uiState.update { state ->
                         state.copy(favoritePlaceIds = if (mutation.isSaved) state.favoritePlaceIds + id else state.favoritePlaceIds - id)
                     }
@@ -148,6 +197,7 @@ class FavoriteViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             runCatching { repository.setTourism(id, saved) }
                 .onSuccess { mutation ->
+                    tourismFavoriteOverrides[id] = mutation.isSaved
                     _uiState.update { state ->
                         state.copy(favoriteTourismIds = if (mutation.isSaved) state.favoriteTourismIds + id else state.favoriteTourismIds - id)
                     }
