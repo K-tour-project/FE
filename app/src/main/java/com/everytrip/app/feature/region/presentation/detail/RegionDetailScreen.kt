@@ -375,7 +375,7 @@ private fun ContentCarousel(contents: List<ContentSummary>, onClick: (Int) -> Un
                 TourismImage(content.posterUrl, content.title, Modifier.fillMaxWidth().height(205.dp))
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     Text(content.title, color = NavyText, fontWeight = FontWeight.Bold,
-                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(content.categoryLabel, color = SecondaryText, style = MaterialTheme.typography.bodySmall)
                 }
             }
@@ -389,7 +389,7 @@ private fun RelatedPlaceCarousel(places: List<RelatedPlace>, onClick: (String) -
     SectionTitle("연관 관광지 추천")
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(vertical = 6.dp),
+        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp),
     ) {
         items(places, key = { it.relatedId }) { place ->
             Card(

@@ -131,15 +131,15 @@ fun ArtworkDetailScreen(
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(content.title, color = NavyText, style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                content.genres?.takeIf(String::isNotBlank)?.let {
-                    Text(it.replace("|", " · "), color = SecondaryText,
-                        style = MaterialTheme.typography.bodyMedium)
-                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     CategoryChip(content.categoryLabel)
                     if (content.isDrama()) {
                         content.networks?.takeIf(String::isNotBlank)?.let { NetworkChip(it) }
                     }
+                }
+                content.genres?.takeIf(String::isNotBlank)?.let {
+                    Text(it.replace("|", " · "), color = SecondaryText,
+                        style = MaterialTheme.typography.bodyMedium)
                 }
                 content.overview?.let { ExpandableOverview(it) }
             }

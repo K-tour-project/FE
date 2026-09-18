@@ -39,6 +39,7 @@ fun ArtworkSearchScreen(
         onQueryChange = viewModel::setQuery,
         onFocus = viewModel::activate,
         onClear = { viewModel.setQuery("") },
+        onSearch = viewModel::searchNow,
         onArtworkClick = onArtworkClick,
     )
 }
@@ -50,6 +51,7 @@ private fun ArtworkSearchContent(
     onQueryChange: (String) -> Unit,
     onFocus: () -> Unit,
     onClear: () -> Unit,
+    onSearch: () -> Unit,
     onArtworkClick: (Int) -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
@@ -71,7 +73,10 @@ private fun ArtworkSearchContent(
             onQueryChange = onQueryChange,
             onFocus = onFocus,
             onClear = onClear,
-            onSearch = { focusManager.clearFocus() },
+            onSearch = {
+                focusManager.clearFocus()
+                onSearch()
+            },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
         )
 
@@ -106,6 +111,7 @@ private fun ArtworkSearchPreview() {
         onQueryChange = {},
         onFocus = {},
         onClear = {},
+        onSearch = {},
         onArtworkClick = {},
     )
 }
@@ -118,8 +124,8 @@ private fun ArtworkSearchResultsPreview() {
             query = "왕",
             isActive = true,
             items = listOf(
-                ArtworkSearchItem(1, "왕이 된 남자", "MOVIE", null, "2012", "사극"),
-                ArtworkSearchItem(2, "왕과 사는 남자", "MOVIE", null, "2026", "사극"),
+                ArtworkSearchItem(1, "왕이 된 남자", "MOVIE", "2012", "사극", null),
+                ArtworkSearchItem(2, "왕과 사는 남자", "MOVIE", "2026", "사극", null),
             ),
             total = 2,
         ),
@@ -127,6 +133,7 @@ private fun ArtworkSearchResultsPreview() {
         onQueryChange = {},
         onFocus = {},
         onClear = {},
+        onSearch = {},
         onArtworkClick = {},
     )
 }

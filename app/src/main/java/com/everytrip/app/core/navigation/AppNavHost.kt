@@ -174,6 +174,7 @@ fun AppNavHost(
                         HomeScreen(
                             uiState = homeUiState,
                             onNavigateToSearch = { navController.navigateBottom(AppRoute.ArtworkSearch) },
+                            onNavigateToChatbot = { navController.navigateBottom(AppRoute.Chatbot) },
                             onNavigateToRegionSearch = { navController.navigateBottom(AppRoute.RegionSearch) },
                             onNavigateToDestination = { detailPath ->
                                 val contentId = detailPath.substringAfterLast('/').takeIf(String::isNotBlank)

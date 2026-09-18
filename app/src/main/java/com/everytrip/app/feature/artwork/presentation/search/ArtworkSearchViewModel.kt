@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 class ArtworkSearchViewModel(
     private val repository: ArtworkRepository = ArtworkRepository(),
@@ -23,10 +24,12 @@ class ArtworkSearchViewModel(
 
     fun setQuery(query: String) {
         _uiState.update { it.copy(query = query, isActive = true) }
-        search()
+        search(debounce = true)
     }
 
-    private fun search() {
+    fun searchNow() = search(debounce = false)
+
+    private fun search(debounce: Boolean) {
         searchJob?.cancel()
         val query = _uiState.value.query.trim()
         if (query.isEmpty()) {
@@ -34,12 +37,12 @@ class ArtworkSearchViewModel(
                 isLoading = false, error = null) }
             return
         }
-        _uiState.update { it.copy(isLoading = true, error = null) }
+        _uiState.update { it.copy(items = emptyList(), total = 0, isLoading = true, error = null) }
         searchJob = viewModelScope.launch {
-            delay(250)
+            if (debounce) delay(2_000.milliseconds)
             runCatching { repository.searchArtworks(query) }
-                .onSuccess { items ->
-                    _uiState.update { it.copy(items = items, total = items.size,
+                .onSuccess { response ->
+                    _uiState.update { it.copy(items = response.items, total = response.total,
                         isLoading = false) }
                 }
                 .onFailure { error ->
