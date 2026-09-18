@@ -353,12 +353,13 @@ fun AppNavHost(
                         arguments = listOf(navArgument("productId") { type = NavType.IntType }),
                     ) { entry ->
                         val productId = entry.arguments?.getInt("productId") ?: return@composable
+                        var showFilmingPlaceDetail by remember(productId) { mutableStateOf(false) }
                         ArtworkDetailRoute(
                             productId = productId,
                             onBackClick = { navController.popBackStack() },
                             onFilmingPlaceClick = { placeId ->
                                 regionSearchViewModel.selectFilmingPlace(placeId)
-                                navController.navigateBottom(AppRoute.RegionSearch)
+                                showFilmingPlaceDetail = true
                             },
                             onRelatedArtworkClick = { relatedId ->
                                 navController.navigate(AppRoute.ArtworkDetail.createRoute(relatedId))
@@ -366,6 +367,32 @@ fun AppNavHost(
                             isSaved = { it in favoriteUiState.savedProductIds },
                             onSaveClick = favoriteViewModel::toggleProduct,
                         )
+                        if (showFilmingPlaceDetail) {
+                            RegionDetailScreen(
+                                state = regionUiState,
+                                onClose = {
+                                    showFilmingPlaceDetail = false
+                                    regionSearchViewModel.closePlaceDetail()
+                                },
+                                onRetry = {
+                                    regionUiState.selectedPlaceId?.let(regionSearchViewModel::selectFilmingPlace)
+                                        ?: regionUiState.selectedContentId?.let(regionSearchViewModel::selectRelatedPlace)
+                                },
+                                onContentClick = { relatedId ->
+                                    showFilmingPlaceDetail = false
+                                    regionSearchViewModel.closePlaceDetail()
+                                    navController.navigate(AppRoute.ArtworkDetail.createRoute(relatedId))
+                                },
+                                onFilmingPlaceClick = regionSearchViewModel::selectFilmingPlace,
+                                onRelatedPlaceClick = regionSearchViewModel::selectRelatedPlace,
+                                favoritePlaceIds = favoriteUiState.favoritePlaceIds,
+                                favoriteTourismIds = favoriteUiState.favoriteTourismIds,
+                                savedProductIds = favoriteUiState.savedProductIds,
+                                onTogglePlace = favoriteViewModel::togglePlace,
+                                onToggleTourism = favoriteViewModel::toggleTourism,
+                                onToggleProduct = favoriteViewModel::toggleProduct,
+                            )
+                        }
                     }
                 }
             }

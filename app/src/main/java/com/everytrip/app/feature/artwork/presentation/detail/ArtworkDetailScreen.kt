@@ -269,21 +269,21 @@ private fun FilmingLocationCarousel(
         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(locations, key = { it.placeId }) { place ->
                 Card(
-                    modifier = Modifier.width(210.dp).height(112.dp).clickable { onClick(place) },
+                    modifier = Modifier.width(160.dp).height(80.dp).clickable { onClick(place) },
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(Color.White),
                     border = BorderStroke(1.dp, Border),
                     elevation = CardDefaults.cardElevation(2.dp),
                 ) {
-                    Column(Modifier.fillMaxSize().padding(16.dp),
+                    Column(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.Center) {
                         Text(place.name, color = NavyText,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold, maxLines = 1,
-                            overflow = TextOverflow.Ellipsis, fontSize = 18.sp)
-                        Spacer(Modifier.height(8.dp))
+                            overflow = TextOverflow.Ellipsis, fontSize = 17.sp)
+                        Spacer(Modifier.height(3.dp))
                         Text(listOfNotNull(place.sidoName, place.sigunguName).joinToString(" "),
-                            color = SecondaryText, maxLines = 1,
+                            color = SecondaryText, fontSize = 15.sp, maxLines = 1,
                             overflow = TextOverflow.Ellipsis)
                     }
                 }

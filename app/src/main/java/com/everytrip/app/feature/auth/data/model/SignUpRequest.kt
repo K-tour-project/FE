@@ -9,9 +9,8 @@ data class EmailVerifyRequest(
     val code: String,
 )
 
-data class SignUpRequest(
-    val email: String,
-    val password: String,
-    val nickname: String,
-    val profileImageUrl: String? = null,
+class ProfileImageUpload(
+    val bytes: ByteArray,
+    val mimeType: String,
+    val fileName: String,
 )

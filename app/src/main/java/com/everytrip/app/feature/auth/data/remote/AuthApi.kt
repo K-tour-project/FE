@@ -18,8 +18,11 @@ import com.everytrip.app.feature.auth.data.model.PasswordResetVerifyResponse
 import com.everytrip.app.feature.auth.data.model.PasswordResetConfirmRequest
 import com.everytrip.app.feature.auth.data.model.PasswordResetConfirmResponse
 import com.everytrip.app.feature.auth.data.model.RefreshRequest
-import com.everytrip.app.feature.auth.data.model.SignUpRequest
 import com.everytrip.app.feature.auth.data.model.SignUpResponse
+import com.everytrip.app.feature.auth.data.model.ProfileImageUpload
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.MediaType.Companion.toMediaType
 import com.google.gson.JsonParser
 import retrofit2.HttpException
 
@@ -52,9 +55,22 @@ class AuthApi private constructor(
         email: String,
         password: String,
         nickname: String,
-        profileImageUrl: String?,
+        profileImage: ProfileImageUpload?,
     ): SignUpResponse = execute {
-        service.signUp(SignUpRequest(email, password, nickname, profileImageUrl))
+        val textType = "text/plain".toMediaType()
+        val imagePart = profileImage?.let { image ->
+            MultipartBody.Part.createFormData(
+                "profile_image",
+                image.fileName,
+                image.bytes.toRequestBody(image.mimeType.toMediaType()),
+            )
+        }
+        service.signUp(
+            email.toRequestBody(textType),
+            password.toRequestBody(textType),
+            nickname.toRequestBody(textType),
+            imagePart,
+        )
     }
 
     suspend fun login(email: String, password: String, deviceId: String): AuthSession = execute {

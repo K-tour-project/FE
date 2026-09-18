@@ -1,9 +1,11 @@
 package com.everytrip.app.feature.auth.presentation.signup
 
 import android.app.Application
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.everytrip.app.feature.auth.data.remote.AuthHttpException
+import com.everytrip.app.feature.auth.data.model.ProfileImageUpload
 import com.everytrip.app.feature.auth.data.repository.AuthRepository
 import com.everytrip.app.feature.auth.data.repository.AuthRepositoryImpl
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,6 +13,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class SignUpViewModel(
     application: Application,
@@ -78,7 +82,7 @@ class SignUpViewModel(
         password: String,
         passwordCheck: String,
         nickname: String,
-        profileImageUrl: String?,
+        profileImageUri: Uri?,
     ) {
         val validationMessage = validateSignUp(password, passwordCheck, nickname)
         if (validationMessage != null) {
@@ -89,11 +93,26 @@ class SignUpViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isSigningUp = true, message = null) }
             runCatching {
+                val profileImage = profileImageUri?.let { uri ->
+                    withContext(Dispatchers.IO) {
+                        val resolver = getApplication<Application>().contentResolver
+                        val mimeType = resolver.getType(uri).orEmpty()
+                        require(mimeType in setOf("image/jpeg", "image/png", "image/webp")) {
+                            "JPEG, PNG, WebP 이미지만 사용할 수 있습니다."
+                        }
+                        val bytes = resolver.openInputStream(uri)?.use { it.readBytes() }
+                            ?: error("이미지를 읽을 수 없습니다.")
+                        require(bytes.size <= 5 * 1024 * 1024) {
+                            "이미지는 최대 5MB까지 가능합니다."
+                        }
+                        ProfileImageUpload(bytes, mimeType, "profile.${mimeType.substringAfter('/')}")
+                    }
+                }
                 repository.signUp(
                     email = email.trim(),
                     password = password,
                     nickname = nickname.trim(),
-                    profileImageUrl = profileImageUrl,
+                    profileImage = profileImage,
                 )
             }
                 .onSuccess { response ->
@@ -124,10 +143,10 @@ class SignUpViewModel(
     private fun validateSignUp(password: String, passwordCheck: String, nickname: String): String? {
         return when {
             !_uiState.value.emailVerified -> "이메일 인증을 먼저 완료해 주세요."
-            nickname.trim().isBlank() -> "닉네임을 입력해 주세요."
+            nickname.trim().length !in 2..20 -> "닉네임은 2~20자로 입력해 주세요."
             password != passwordCheck -> "비밀번호가 일치하지 않습니다."
             password.length < 8 -> "비밀번호는 8자 이상이어야 합니다."
-            !password.any { it.isLetter() } -> "비밀번호에는 영문이 포함되어야 합니다."
+            !password.any { it in 'A'..'Z' || it in 'a'..'z' } -> "비밀번호에는 영문이 포함되어야 합니다."
             !password.any { it.isDigit() } -> "비밀번호에는 숫자가 포함되어야 합니다."
             password.toByteArray(Charsets.UTF_8).size > 72 -> "비밀번호는 최대 72바이트까지 가능합니다."
             else -> null
@@ -163,7 +182,7 @@ class SignUpViewModel(
             is AuthHttpException -> when (statusCode) {
                 403 -> "이메일 인증이 만료되었습니다. 이메일 인증부터 다시 진행해 주세요."
                 409 -> detail
-                422 -> "비밀번호 또는 닉네임 형식을 확인해 주세요."
+                422 -> detail
                 else -> detail
             }
             else -> message ?: "회원가입에 실패했습니다."

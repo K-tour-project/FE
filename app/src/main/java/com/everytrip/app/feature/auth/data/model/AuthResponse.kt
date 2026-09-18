@@ -4,7 +4,8 @@ data class AuthUser(
     val userId: Int,
     val nickname: String,
     val authProvider: String,
-    val email: String,
+    val email: String?,
+    val profileImageUrl: String?,
     val emailVerified: Boolean,
     val createdAt: String,
 )

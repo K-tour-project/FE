@@ -17,9 +17,12 @@ import com.everytrip.app.feature.auth.data.model.PasswordResetVerifyResponse
 import com.everytrip.app.feature.auth.data.model.PasswordResetConfirmRequest
 import com.everytrip.app.feature.auth.data.model.PasswordResetConfirmResponse
 import com.everytrip.app.feature.auth.data.model.RefreshRequest
-import com.everytrip.app.feature.auth.data.model.SignUpRequest
 import com.everytrip.app.feature.auth.data.model.SignUpResponse
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.http.Body
+import retrofit2.http.Multipart
+import retrofit2.http.Part
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Tag
@@ -40,8 +43,14 @@ internal interface AuthService {
     @POST("auth/email/verify-code")
     suspend fun verifyEmailCode(@Body request: EmailVerifyRequest): EmailVerifyResponse
 
+    @Multipart
     @POST("auth/signup")
-    suspend fun signUp(@Body request: SignUpRequest): SignUpResponse
+    suspend fun signUp(
+        @Part("email") email: RequestBody,
+        @Part("password") password: RequestBody,
+        @Part("nickname") nickname: RequestBody,
+        @Part profileImage: MultipartBody.Part?,
+    ): SignUpResponse
 
     @POST("auth/login")
     suspend fun login(@Body request: LoginRequest): AuthSession

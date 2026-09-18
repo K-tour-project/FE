@@ -33,7 +33,7 @@ extensions.configure<ApplicationExtension>("android") {
         applicationId = "com.everytrip.app"
         minSdk = 24
         targetSdk = 37
-        versionCode = 1
+        versionCode = 3
         versionName = "1.0"
 
         manifestPlaceholders["KAKAO_NATIVE_APP_KEY"] = kakaoNativeAppKey
