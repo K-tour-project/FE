@@ -1,6 +1,8 @@
 package com.everytrip.app.feature.chatbot.presentation
 
+import com.everytrip.app.feature.chatbot.data.ChatCourse
 import com.everytrip.app.feature.chatbot.data.ChatPlace
+import com.everytrip.app.feature.chatbot.data.ChatWork
 
 data class ChatUiState(
     val messages: List<ChatMessage> = listOf(
@@ -17,6 +19,8 @@ sealed interface ChatMessage {
     data class Bot(
         override val text: String,
         val intent: String? = null,
+        val works: List<ChatWork> = emptyList(),
         val places: List<ChatPlace> = emptyList(),
+        val course: ChatCourse? = null,
     ) : ChatMessage
 }

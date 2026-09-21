@@ -21,6 +21,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.compose.ui.Modifier
@@ -30,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.everytrip.app.core.designsystem.component.MainTopBar
 import com.everytrip.app.core.designsystem.component.ApiErrorScreen
+import com.everytrip.app.core.designsystem.component.LocationPermissionNoticeDialog
 import com.everytrip.app.feature.mypage.presentation.MyPageUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,6 +53,9 @@ fun RegionSearchScreen(
     val places = viewModel.places.collectAsLazyPagingItems()
     val displayState = uiState.copy(places = places.itemSnapshotList.items)
     val context = LocalContext.current
+    var showLocationPermissionNotice by rememberSaveable {
+        mutableStateOf(!context.hasLocationPermission())
+    }
     val bottomSheetState = rememberStandardBottomSheetState(
         initialValue = SheetValue.PartiallyExpanded,
         skipHiddenState = true,
@@ -65,13 +72,6 @@ fun RegionSearchScreen(
     LaunchedEffect(Unit) {
         if (context.hasLocationPermission()) {
             viewModel.onLocationPermissionResult(isGranted = true)
-        } else {
-            locationPermissionLauncher.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION,
-                ),
-            )
         }
     }
 
@@ -176,6 +176,24 @@ fun RegionSearchScreen(
             onTogglePlace = onTogglePlace,
             onToggleTourism = onToggleTourism,
             onToggleProduct = onToggleProduct,
+        )
+    }
+
+    if (showLocationPermissionNotice) {
+        LocationPermissionNoticeDialog(
+            onAllowClick = {
+                showLocationPermissionNotice = false
+                locationPermissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                    ),
+                )
+            },
+            onLaterClick = {
+                showLocationPermissionNotice = false
+                viewModel.onLocationPermissionResult(isGranted = false)
+            },
         )
     }
 }
