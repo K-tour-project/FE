@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -59,7 +60,10 @@ import androidx.compose.ui.unit.sp
 import com.everytrip.app.core.designsystem.component.MainTopBar
 import com.everytrip.app.core.designsystem.modifier.dismissKeyboardOnTap
 import com.everytrip.app.R
+import com.everytrip.app.feature.chatbot.data.ChatCourse
+import com.everytrip.app.feature.chatbot.data.ChatCourseStop
 import com.everytrip.app.feature.chatbot.data.ChatPlace
+import com.everytrip.app.feature.chatbot.data.ChatWork
 import com.everytrip.app.feature.region.presentation.search.TourismImage
 import com.everytrip.app.ui.theme.BodyText
 import com.everytrip.app.ui.theme.Border
@@ -109,6 +113,7 @@ private fun AiChatbotContent(
     }
 
     Scaffold(
+        modifier = Modifier.imePadding(),
         topBar = { MainTopBar(title = "Every Trip AI") },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
@@ -156,12 +161,137 @@ private fun BotMessageGroup(message: ChatMessage.Bot, onPlaceClick: (String) -> 
         Spacer(Modifier.width(9.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             BotMessageBubble(message.text)
-            if (message.places.isNotEmpty()) {
-                Text("관련 촬영지", color = BodyText, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                message.places.forEach { place ->
-                    ChatPlaceCard(place, onClick = { onPlaceClick(place.placeId) })
+            if (message.intent == "course_recommendation" && message.course != null) {
+                ChatCourseCard(message.course, onPlaceClick)
+            } else {
+                if (message.works.isNotEmpty()) {
+                    Text("관련 작품", color = BodyText, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    message.works.forEach { work -> ChatWorkCard(work) }
+                }
+                if (message.places.isNotEmpty()) {
+                    Text("관련 촬영지", color = BodyText, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    message.places.forEach { place ->
+                        ChatPlaceCard(place, onClick = { onPlaceClick(place.placeId) })
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ChatWorkCard(work: ChatWork) {
+    Row(
+        modifier = Modifier.fillMaxWidth().height(132.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .border(1.dp, Border, RoundedCornerShape(16.dp))
+            .background(Color.White),
+    ) {
+        TourismImage(
+            work.posterUrl,
+            work.title,
+            Modifier.width(94.dp).fillMaxSize(),
+            placeholderText = "포스터 없음",
+        )
+        Column(
+            modifier = Modifier.weight(1f).padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            Text(
+                work.title,
+                color = BodyText,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            val details = listOfNotNull(
+                work.type?.let { if (it == "MOVIE") "영화" else if (it == "DRAMA") "드라마" else it },
+                work.releaseDate?.take(4),
+                work.genres?.takeIf { it.isNotEmpty() }?.joinToString(", "),
+            )
+            if (details.isNotEmpty()) {
+                Text(
+                    details.joinToString(" · "),
+                    color = SecondaryText,
+                    fontSize = 13.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            work.rating?.let { rating ->
+                Text("평점 $rating", color = PrimaryBlue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            }
+            work.overview?.takeIf(String::isNotBlank)?.let { overview ->
+                Text(
+                    overview,
+                    color = SecondaryText,
+                    fontSize = 12.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChatCourseCard(course: ChatCourse, onPlaceClick: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("추천 여행 코스", color = BodyText, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Column(
+            modifier = Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .border(1.dp, Border, RoundedCornerShape(16.dp))
+                .background(Color.White)
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            course.description?.takeIf(String::isNotBlank)?.let {
+                Text(it, color = BodyText, fontSize = 14.sp, lineHeight = 20.sp)
+            }
+            if (course.description.isNullOrBlank()) {
+                val summary = listOfNotNull(
+                    course.totalPlaces?.let { "총 ${it}개 장소" },
+                    course.estimatedMinutes?.let { "예상 ${it}분" },
+                    course.transport?.takeIf(String::isNotBlank),
+                )
+                if (summary.isNotEmpty()) Text(summary.joinToString(" · "), color = BodyText, fontSize = 14.sp)
+            }
+            course.stops.orEmpty().sortedBy(ChatCourseStop::order).forEach { stop ->
+                ChatCourseStopRow(stop, onClick = { onPlaceClick(stop.placeId) })
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChatCourseStopRow(stop: ChatCourseStop, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
+            .clickable(onClick = onClick).padding(vertical = 4.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Box(
+            modifier = Modifier.size(28.dp).background(PrimaryBlue, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(stop.order.toString(), color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(stop.placeName, color = BodyText, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            stop.workTitle?.takeIf(String::isNotBlank)?.let {
+                Text(it, color = PrimaryBlue, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            stop.address?.takeIf(String::isNotBlank)?.let {
+                Text(it, color = SecondaryText, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            val timing = listOfNotNull(
+                stop.travelMinutesFromPrev?.takeIf { it > 0 }?.let { "이동 ${it}분" },
+                stop.stayMinutes?.let { "체류 ${it}분" },
+            )
+            if (timing.isNotEmpty()) Text(timing.joinToString(" · "), color = SecondaryText, fontSize = 12.sp)
         }
     }
 }

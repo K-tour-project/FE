@@ -158,9 +158,15 @@ class RegionSearchViewModel(
     }
 
     fun onLocationPermissionResult(isGranted: Boolean) {
+        if (!isGranted) {
+            currentLocationListener?.let(locationManager::removeUpdates)
+            currentLocationListener = null
+        }
         _uiState.update {
             it.copy(
                 isLocationPermissionGranted = isGranted,
+                isLoadingCurrentLocation = if (isGranted) it.isLoadingCurrentLocation else false,
+                currentLocation = if (isGranted) it.currentLocation else null,
             )
         }
 

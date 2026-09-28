@@ -1,9 +1,16 @@
 package com.everytrip.app.feature.artwork.presentation.search
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
@@ -29,10 +36,16 @@ internal fun ArtworkSearchResults(
     onArtworkClick: (Int) -> Unit,
 ) {
     Column {
-        Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp,
-            top = 22.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("검색 결과 총 ${state.total}개", color = ArtworkInk,
-                fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Row(
+            Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "검색 결과 총 ${state.total}개",
+                color = ArtworkInk,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
         }
         HorizontalDivider(color = Color(0xFFE5E8EF))
         when {
@@ -43,14 +56,20 @@ internal fun ArtworkSearchResults(
                 Text("검색 결과를 불러오지 못했어요.", color = SecondaryText)
             }
             state.items.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(if (state.query.isBlank()) "검색어를 입력해주세요."
-                    else "검색 결과가 없습니다.", color = SecondaryText)
+                Text(
+                    if (state.query.isBlank()) "검색어를 입력해주세요." else "검색 결과가 없습니다.",
+                    color = SecondaryText,
+                )
             }
             else -> LazyColumn(Modifier.fillMaxSize()) {
-                items(state.items, key = { it.productId }) { artwork ->
-                    ArtworkResultRow(artwork) { onArtworkClick(artwork.productId) }
-                    HorizontalDivider(Modifier.padding(start = 116.dp, end = 20.dp),
-                        color = Color(0xFFE5E8EF))
+                itemsIndexed(state.items) { _, artwork ->
+                    ArtworkResultRow(artwork, artwork.productId?.let { productId ->
+                        { onArtworkClick(productId) }
+                    })
+                    HorizontalDivider(
+                        Modifier.padding(horizontal = 20.dp),
+                        color = Color(0xFFE5E8EF),
+                    )
                 }
             }
         }
@@ -58,24 +77,48 @@ internal fun ArtworkSearchResults(
 }
 
 @Composable
-private fun ArtworkResultRow(item: ArtworkSearchItem, onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth().clickable(onClick = onClick)
-        .padding(horizontal = 20.dp, vertical = 11.dp),
-        verticalAlignment = Alignment.CenterVertically) {
-        TourismImage(item.posterUrl, item.title,
-            Modifier.size(width = 80.dp, height = 112.dp).clip(RoundedCornerShape(6.dp)),
-            placeholderText = "준비 중")
-        Spacer(Modifier.width(16.dp))
+private fun ArtworkResultRow(item: ArtworkSearchItem, onClick: (() -> Unit)?) {
+    Row(
+        Modifier.fillMaxWidth().clickable(enabled = onClick != null) { onClick?.invoke() }
+            .padding(horizontal = 20.dp, vertical = 18.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TourismImage(
+            url = item.posterUrl,
+            name = item.title,
+            modifier = Modifier.size(width = 80.dp, height = 112.dp)
+                .clip(RoundedCornerShape(6.dp)),
+            placeholderText = "포스터 없음",
+        )
         Column(Modifier.weight(1f)) {
-            Text(item.title, color = ArtworkInk, fontSize = 18.sp,
-                fontWeight = FontWeight.Bold, maxLines = 1,
-                overflow = TextOverflow.Ellipsis)
-            Spacer(Modifier.height(5.dp))
-            Text(listOfNotNull(item.categoryLabel, item.year, item.genres)
-                .joinToString(" · "), color = SecondaryText, fontSize = 13.sp,
-                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                item.title,
+                color = ArtworkInk,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            val details = listOfNotNull(
+                item.year?.takeIf(String::isNotBlank),
+                item.categoryLabel.takeIf(String::isNotBlank),
+                item.genres?.takeIf(String::isNotBlank),
+            )
+            if (details.isNotEmpty()) {
+                Text(
+                    details.joinToString(" · "),
+                    color = SecondaryText,
+                    fontSize = 13.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
-        Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null,
-            Modifier.size(22.dp), tint = SecondaryText)
+        if (onClick != null) Icon(
+            Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+            contentDescription = null,
+            tint = SecondaryText,
+        )
     }
 }

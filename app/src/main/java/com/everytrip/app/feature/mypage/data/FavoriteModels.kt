@@ -32,6 +32,8 @@ data class FavoritePlaceData(
     val address: String,
     val imageUrl: String?,
     val detailPath: String,
+    val sidoName: String = "",
+    val sigunguName: String = "",
 )
 data class SavedProductData(
     val productId: Int,

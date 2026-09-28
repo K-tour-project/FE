@@ -89,7 +89,7 @@ fun SignUpScreen(
     onBackClick: () -> Unit = {},
     onSendCodeClick: (String) -> Unit = {},
     onVerifyCodeClick: (String, String) -> Unit = { _, _ -> },
-    onSignUpClick: (String, String, String, String, String?) -> Unit = { _, _, _, _, _ -> },
+    onSignUpClick: (String, String, String, String, Uri?) -> Unit = { _, _, _, _, _ -> },
     onTermsClick: () -> Unit = {},
     onPrivacyClick: () -> Unit = {},
     onMessageShown: () -> Unit = {},
@@ -237,6 +237,12 @@ fun SignUpScreen(
                 leadingIcon = Icons.Outlined.Person,
                 contentDescription = "닉네임",
             )
+            Text(
+                text = "닉네임 2~20자",
+                modifier = Modifier.fillMaxWidth().padding(top = 3.dp, start = 12.dp),
+                fontSize = 12.sp,
+                color = SecondaryText,
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -247,7 +253,7 @@ fun SignUpScreen(
             )
 
             Text(
-                text = "8자 이상, 영문과 숫자 포함, 최대 72바이트",
+                text = "8자 이상, 영문과 숫자 포함",
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 3.dp, start = 12.dp),
@@ -293,7 +299,7 @@ fun SignUpScreen(
                         password,
                         passwordCheck,
                         nickname,
-                        profileImageUri?.toString(),
+                        profileImageUri,
                     )
                 },
                 enabled = canSubmitSignUp(termsAccepted, privacyAccepted) &&

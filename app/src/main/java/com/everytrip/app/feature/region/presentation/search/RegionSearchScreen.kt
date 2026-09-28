@@ -18,9 +18,14 @@ import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.rememberStandardBottomSheetState
 import com.everytrip.app.feature.region.presentation.detail.RegionDetailScreen
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.compose.ui.Modifier
@@ -28,8 +33,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.everytrip.app.core.designsystem.component.MainTopBar
 import com.everytrip.app.core.designsystem.component.ApiErrorScreen
+import com.everytrip.app.core.designsystem.component.LocationPermissionNoticeDialog
 import com.everytrip.app.feature.mypage.presentation.MyPageUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,6 +58,13 @@ fun RegionSearchScreen(
     val places = viewModel.places.collectAsLazyPagingItems()
     val displayState = uiState.copy(places = places.itemSnapshotList.items)
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var lastKnownLocationPermission by remember {
+        mutableStateOf(context.hasLocationPermission())
+    }
+    var showLocationPermissionNotice by rememberSaveable {
+        mutableStateOf(!context.hasLocationPermission())
+    }
     val bottomSheetState = rememberStandardBottomSheetState(
         initialValue = SheetValue.PartiallyExpanded,
         skipHiddenState = true,
@@ -59,19 +75,30 @@ fun RegionSearchScreen(
     ) { permissions ->
         val isGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
             permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        lastKnownLocationPermission = isGranted
         viewModel.onLocationPermissionResult(isGranted)
     }
 
     LaunchedEffect(Unit) {
         if (context.hasLocationPermission()) {
             viewModel.onLocationPermissionResult(isGranted = true)
-        } else {
-            locationPermissionLauncher.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION,
-                ),
-            )
+        }
+    }
+
+    DisposableEffect(context, lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val isGranted = context.hasLocationPermission()
+                if (isGranted != lastKnownLocationPermission) {
+                    lastKnownLocationPermission = isGranted
+                    viewModel.onLocationPermissionResult(isGranted)
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 
@@ -176,6 +203,24 @@ fun RegionSearchScreen(
             onTogglePlace = onTogglePlace,
             onToggleTourism = onToggleTourism,
             onToggleProduct = onToggleProduct,
+        )
+    }
+
+    if (showLocationPermissionNotice) {
+        LocationPermissionNoticeDialog(
+            onAllowClick = {
+                showLocationPermissionNotice = false
+                locationPermissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                    ),
+                )
+            },
+            onLaterClick = {
+                showLocationPermissionNotice = false
+                viewModel.onLocationPermissionResult(isGranted = false)
+            },
         )
     }
 }

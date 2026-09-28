@@ -37,7 +37,9 @@ class ChatViewModel(
                         messages = it.messages + ChatMessage.Bot(
                             text = response.answer,
                             intent = response.intent,
+                            works = response.works.orEmpty(),
                             places = response.places.orEmpty(),
+                            course = response.course,
                         ),
                         isLoading = false,
                     )

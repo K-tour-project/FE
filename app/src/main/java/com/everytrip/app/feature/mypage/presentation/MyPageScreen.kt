@@ -27,7 +27,6 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Card
@@ -61,6 +60,7 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.everytrip.app.feature.mypage.data.FavoritePlaceData
 import com.everytrip.app.feature.mypage.data.SavedProductData
+import com.everytrip.app.feature.region.data.model.toContentCategoryLabel
 import com.everytrip.app.core.designsystem.component.AppBottomNavigationBar
 import com.everytrip.app.core.designsystem.component.DefaultProfileImage
 import com.everytrip.app.core.designsystem.component.MainTopBar
@@ -77,7 +77,7 @@ import com.everytrip.app.ui.theme.SecondaryText
 fun MyPageRoute(
     viewModel: FavoriteViewModel,
     onSettingsClick: () -> Unit = {},
-    onPlaceClick: (String) -> Unit = {},
+    onPlaceClick: (FavoritePlaceData) -> Unit = {},
     onWorkClick: (String) -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -88,17 +88,17 @@ fun MyPageRoute(
         onSettingsClick = onSettingsClick,
         onPlaceClick = { id ->
             favoritePlaces.itemSnapshotList.items.firstOrNull { it.favoriteId == id }
-                ?.detailPath?.let(onPlaceClick)
+                ?.let(onPlaceClick)
         },
         onWorkClick = { id ->
             savedProducts.itemSnapshotList.items.firstOrNull { it.productId.toLong() == id }
                 ?.detailPath?.let(onWorkClick)
         },
         likedPlaces = favoritePlaces.itemSnapshotList.items.map {
-            LikedPlaceUi(it.favoriteId, it.name, it.description, it.address, it.imageUrl)
+            it.toLikedPlaceUi()
         },
         savedWorks = savedProducts.itemSnapshotList.items.map {
-            SavedWorkUi(it.productId.toLong(), it.title, it.category, it.year, it.overview, it.locationSummary, it.posterUrl)
+            it.toSavedWorkUi()
         },
         likedPlaceCount = state.myPage.favoritePlaceCount,
         savedWorkCount = state.myPage.savedProductCount,
@@ -132,7 +132,6 @@ object MyPageTextSize {
     val summaryCount = 27.sp
     val tab = 17.sp
     val cardTitle = 20.sp
-    val cardBody = 15.sp
     val cardMeta = 14.sp
 }
 
@@ -141,8 +140,7 @@ enum class MyPageTab { LikedPlaces, SavedWorks }
 data class LikedPlaceUi(
     val id: Long,
     val name: String,
-    val description: String,
-    val address: String,
+    val region: String,
     val imageUrl: String? = null,
 )
 
@@ -151,10 +149,17 @@ data class SavedWorkUi(
     val title: String,
     val category: String,
     val year: String,
-    val overview: String,
-    val filmingLocationSummary: String,
     val posterUrl: String? = null,
 )
+
+private fun FavoritePlaceData.toLikedPlaceUi(): LikedPlaceUi {
+    val region = listOf(sidoName, sigunguName).filter(String::isNotBlank).joinToString(" ")
+        .ifBlank { address }
+    return LikedPlaceUi(favoriteId, name, region, imageUrl)
+}
+
+private fun SavedProductData.toSavedWorkUi() =
+    SavedWorkUi(productId.toLong(), title, category.toContentCategoryLabel(), year, posterUrl)
 
 @Composable
 fun MyPageScreen(
@@ -243,7 +248,7 @@ fun MyPageScreen(
                                     "place-${likedPaging.peek(index)?.favoriteId ?: index}"
                                 }) { index ->
                                     likedPaging[index]?.let { data ->
-                                        val place = LikedPlaceUi(data.favoriteId, data.name, data.description, data.address, data.imageUrl)
+                                        val place = data.toLikedPlaceUi()
                                         LikedPlaceCard(place, { onPlaceClick(place.id) }, { onUnlikePlace(place.id) })
                                     }
                                 }
@@ -282,7 +287,7 @@ fun MyPageScreen(
                                     "work-${savedPaging.peek(index)?.productId ?: index}"
                                 }) { index ->
                                     savedPaging[index]?.let { data ->
-                                        val work = SavedWorkUi(data.productId.toLong(), data.title, data.category, data.year, data.overview, data.locationSummary, data.posterUrl)
+                                        val work = data.toSavedWorkUi()
                                         SavedWorkCard(work, { onWorkClick(work.id) }, { onUnsaveWork(work.id) })
                                     }
                                 }
@@ -478,19 +483,15 @@ private fun MyPageTabSelector(selected: MyPageTab, onSelected: (MyPageTab) -> Un
 private fun LikedPlaceCard(place: LikedPlaceUi, onClick: () -> Unit, onUnlike: () -> Unit) {
     ListCard(onClick) {
         TourismImage(place.imageUrl, place.name, Modifier.width(138.dp).fillMaxSize())
-        Column(Modifier.weight(1f).padding(16.dp, 14.dp, 4.dp, 12.dp)) {
+        Column(Modifier.weight(1f).padding(16.dp, 14.dp, 4.dp, 12.dp), verticalArrangement = Arrangement.Center) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(place.name, Modifier.weight(1f), color = BodyText, fontSize = MyPageTextSize.cardTitle, fontWeight = FontWeight.Bold, maxLines = 1)
+                Text(place.name, Modifier.weight(1f), color = BodyText, fontSize = MyPageTextSize.cardTitle, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Icon(Icons.Filled.Favorite, "찜 해제", tint = FavoritePink, modifier = Modifier.clickable(onClick = onUnlike))
                 Spacer(Modifier.width(12.dp))
             }
-            Spacer(Modifier.height(6.dp))
-            Text(place.description, color = SecondaryText, fontSize = MyPageTextSize.cardBody, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(14.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.LocationOn, null, tint = SecondaryText, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(5.dp))
-                Text(place.address, Modifier.weight(1f), color = SecondaryText, fontSize = MyPageTextSize.cardMeta, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(place.region, Modifier.weight(1f), color = SecondaryText, fontSize = MyPageTextSize.cardMeta, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Icon(Icons.Outlined.ChevronRight, null, tint = BodyText)
             }
         }
@@ -501,20 +502,20 @@ private fun LikedPlaceCard(place: LikedPlaceUi, onClick: () -> Unit, onUnlike: (
 private fun SavedWorkCard(work: SavedWorkUi, onClick: () -> Unit, onUnsave: () -> Unit) {
     ListCard(onClick) {
         TourismImage(work.posterUrl, work.title, Modifier.width(124.dp).fillMaxSize())
-        Column(Modifier.weight(1f).padding(16.dp, 14.dp, 4.dp, 12.dp)) {
+        Column(Modifier.weight(1f).padding(16.dp, 14.dp, 4.dp, 12.dp), verticalArrangement = Arrangement.Center) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(work.title, Modifier.weight(1f), color = BodyText, fontSize = MyPageTextSize.cardTitle, fontWeight = FontWeight.Bold, maxLines = 1)
+                Text(work.title, Modifier.weight(1f), color = BodyText, fontSize = MyPageTextSize.cardTitle, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Icon(Icons.Filled.Bookmark, "저장 해제", tint = PrimaryBlue, modifier = Modifier.clickable(onClick = onUnsave))
                 Spacer(Modifier.width(12.dp))
             }
-            Text("${work.category}  |  ${work.year}", color = SecondaryText, fontSize = MyPageTextSize.cardMeta)
-            Spacer(Modifier.height(5.dp))
-            Text(work.overview, color = SecondaryText, fontSize = MyPageTextSize.cardBody, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(14.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.LocationOn, null, tint = SecondaryText, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(5.dp))
-                Text(work.filmingLocationSummary, Modifier.weight(1f), color = SecondaryText, fontSize = MyPageTextSize.cardMeta, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    listOf(work.category, work.year).filter(String::isNotBlank).joinToString(" | "),
+                    Modifier.weight(1f),
+                    color = SecondaryText,
+                    fontSize = MyPageTextSize.cardMeta,
+                )
                 Icon(Icons.Outlined.ChevronRight, null, tint = BodyText)
             }
         }
@@ -543,17 +544,17 @@ private fun SurfaceCard(height: Dp, content: @Composable () -> Unit) {
 }
 
 private val previewLikedPlaces = listOf(
-    LikedPlaceUi(1, "수원 화성", "역사와 전통이 살아있는 대표 명소", "경기 수원시 팔달구"),
-    LikedPlaceUi(2, "정동진 해변", "바다와 기차가 만나는 감성 여행지", "강원 강릉시 강동면"),
-    LikedPlaceUi(3, "행궁동 벽화마을", "예술이 살아있는 골목길", "경기 수원시 팔달구"),
-    LikedPlaceUi(4, "청평호", "자연이 주는 힐링 스팟", "경기 가평군 청평면"),
+    LikedPlaceUi(1, "수원 화성", "경기도 수원시 팔달구"),
+    LikedPlaceUi(2, "정동진 해변", "강원특별자치도 강릉시"),
+    LikedPlaceUi(3, "행궁동 벽화마을", "경기도 수원시 팔달구"),
+    LikedPlaceUi(4, "청평호", "경기도 가평군"),
 )
 
 private val previewSavedWorks = listOf(
-    SavedWorkUi(101, "선재 업고 튀어", "드라마", "2024", "다시, 너에게로 달려가는 시간", "수원, 서울, 춘천 외 5곳"),
-    SavedWorkUi(102, "도깨비", "드라마", "2016", "세상을 넘은, 두 사람의 이야기", "강릉, 주문진, 서울 외 4곳"),
-    SavedWorkUi(103, "왕과 사는 남자", "영화", "2017", "운명을 넘어, 사람을 꿈꾼 이야기", "수원 화성, 서울, 문경 외 3곳"),
-    SavedWorkUi(104, "미스터 션샤인", "드라마", "2018", "그 시대, 사랑의 이름", "인천, 서울, 강화 외 6곳"),
+    SavedWorkUi(101, "선재 업고 튀어", "드라마", "2024"),
+    SavedWorkUi(102, "도깨비", "드라마", "2016"),
+    SavedWorkUi(103, "왕과 사는 남자", "영화", "2017"),
+    SavedWorkUi(104, "미스터 션샤인", "드라마", "2018"),
 )
 
 @Preview(name = "마이페이지 - 찜한 장소", showBackground = true, widthDp = 412, heightDp = 892)

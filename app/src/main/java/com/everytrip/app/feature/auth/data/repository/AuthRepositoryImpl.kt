@@ -6,6 +6,7 @@ import com.everytrip.app.feature.auth.data.model.AuthUser
 import com.everytrip.app.feature.auth.data.model.EmailCodeResponse
 import com.everytrip.app.feature.auth.data.model.EmailVerifyResponse
 import com.everytrip.app.feature.auth.data.model.SignUpResponse
+import com.everytrip.app.feature.auth.data.model.ProfileImageUpload
 import com.everytrip.app.feature.auth.data.model.PasswordResetConfirmResponse
 import com.everytrip.app.feature.auth.data.local.AuthSecureStorage
 import com.everytrip.app.feature.auth.data.remote.AuthApi
@@ -63,8 +64,8 @@ class AuthRepositoryImpl(
         email: String,
         password: String,
         nickname: String,
-        profileImageUrl: String?,
-    ): SignUpResponse = authApi.signUp(email, password, nickname, profileImageUrl)
+        profileImage: ProfileImageUpload?,
+    ): SignUpResponse = authApi.signUp(email, password, nickname, profileImage)
 
     override suspend fun login(email: String, password: String): AuthSession {
         val session = authApi.login(

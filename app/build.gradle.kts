@@ -18,7 +18,7 @@ val backendBaseUrl =
     localProperties.getProperty("BACKEND_BASE_URL") ?: ""
 
 val chatBaseUrl =
-    localProperties.getProperty("CHAT_BASE_URL") ?: "http://10.0.2.2:8001/"
+    localProperties.getProperty("CHAT_BASE_URL") ?: ""
 
 val googleWebClientId =
     localProperties.getProperty("GOOGLE_WEB_CLIENT_ID") ?: ""
@@ -33,7 +33,7 @@ extensions.configure<ApplicationExtension>("android") {
         applicationId = "com.everytrip.app"
         minSdk = 24
         targetSdk = 37
-        versionCode = 1
+        versionCode = 3
         versionName = "1.0"
 
         manifestPlaceholders["KAKAO_NATIVE_APP_KEY"] = kakaoNativeAppKey

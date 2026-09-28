@@ -49,6 +49,7 @@ enum class RecommendationCardType(val aspectRatio: Float) { PLACE(1f), WORK(2f /
 fun HomeScreen(
     uiState: HomeUiState = HomeUiState(),
     onNavigateToSearch: () -> Unit = {},
+    onNavigateToChatbot: () -> Unit = {},
     onNavigateToRegionSearch: () -> Unit = {},
     onNavigateToDestination: (String) -> Unit = {},
     onNavigateToWork: (String) -> Unit = {},
@@ -56,7 +57,7 @@ fun HomeScreen(
 ) {
     Scaffold(topBar = { MainTopBar(title = "Every Trip") }, containerColor = BackgroundGray) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding), horizontalAlignment = Alignment.CenterHorizontally) {
-            item { Spacer(Modifier.height(10.dp)); AISearchBar(onNavigateToSearch); Spacer(Modifier.height(10.dp)) }
+            item { Spacer(Modifier.height(10.dp)); AISearchBar(onNavigateToChatbot); Spacer(Modifier.height(10.dp)) }
             item {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     CategoryItem(Modifier.weight(1f), "작품으로 찾기", Icons.Default.Movie, onNavigateToSearch)
